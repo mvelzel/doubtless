@@ -18,6 +18,8 @@ JNIEXPORT jbyteArray JNICALL Java_Test_createBdd
 
     bdd* bdd = create_bdd(BDD_DEFAULT, (char*)expr_chars, &_errmsg, 0);
 
+    (*env)->ReleaseStringUTFChars(env, expr, expr_chars);
+
     jbyteArray ret = (*env)->NewByteArray(env, bdd->bytesize);
     (*env)->SetByteArrayRegion(env, ret, 0, bdd->bytesize, (jbyte*)bdd);
     return ret;
@@ -35,4 +37,26 @@ JNIEXPORT jstring JNICALL Java_Test_bdd2string
     (*env)->ReleaseByteArrayElements(env, bddArr, bytes, 0);
 
     return res;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_Test_bddOperator
+(JNIEnv* env, jobject obj, jstring operator, jbyteArray leftBddArr, jbyteArray rightBddArr) {
+    const char* operator_chars = (*env)->GetStringUTFChars(env, operator, 0);
+    jbyte* leftBddBytes = (*env)->GetByteArrayElements(env, leftBddArr, NULL);
+    jbyte* rightBddBytes = NULL;
+    if (*operator_chars == '&' || *operator_chars == '|')
+        rightBddBytes = (*env)->GetByteArrayElements(env, rightBddArr, NULL);
+    char* _errmsg = NULL;
+    
+    bdd* resBdd = bdd_operator(*operator_chars, BY_APPLY, (bdd*)leftBddBytes, (bdd*)rightBddBytes, &_errmsg);
+
+    if (rightBddBytes != NULL)
+        (*env)->ReleaseByteArrayElements(env, rightBddArr, rightBddBytes, 0);
+    (*env)->ReleaseByteArrayElements(env, leftBddArr, leftBddBytes, 0);
+    (*env)->ReleaseStringUTFChars(env, operator, operator_chars);
+
+    jbyteArray ret = (*env)->NewByteArray(env, resBdd->bytesize);
+    (*env)->SetByteArrayRegion(env, ret, 0, resBdd->bytesize, (jbyte*)resBdd);
+
+    return ret;
 }

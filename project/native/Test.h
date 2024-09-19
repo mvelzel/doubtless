@@ -23,6 +23,14 @@ JNIEXPORT jbyteArray JNICALL Java_Test_createBdd
 JNIEXPORT jstring JNICALL Java_Test_bdd2string
   (JNIEnv *, jobject, jbyteArray);
 
+/*
+ * Class:      Test
+ * Method:     bddOperator
+ * Signature:  (Ljava/lang/String;[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_Test_bddOperator
+  (JNIEnv *, jobject, jstring, jbyteArray, jbyteArray);
+
 #ifdef __cplusplus
 }
 #endif
