@@ -1,7 +1,8 @@
-scalac Test.scala
-sbt javah
+sbt
+    javah
 
 gcc -shared -fPIC -g -I/usr/include -I$JAVA_HOME/include -I$JAVA_HOME/include/linux bdd.c dictionary.c utils.c vector.c Test.c -o li
 bTest.so
 
-scala -cp . -Djava.library.path=$pwd Test
+sbt
+    run
