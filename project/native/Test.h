@@ -31,6 +31,30 @@ JNIEXPORT jstring JNICALL Java_Test_bdd2string
 JNIEXPORT jbyteArray JNICALL Java_Test_bddOperator
   (JNIEnv *, jobject, jstring, jbyteArray, jbyteArray);
 
+/*
+ * Class:      Test
+ * Method:     bddProb
+ * Signature:  ([B[B)D
+ */
+JNIEXPORT jdouble JNICALL Java_Test_bddProb
+  (JNIEnv *, jobject, jbyteArray, jbyteArray);
+
+/*
+ * Class:      Test
+ * Method:     createDict
+ * Signature:  (Ljava/lang/String;)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_Test_createDict
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:      Test
+ * Method:     dict2string
+ * Signature:  ([B)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_Test_dict2string
+  (JNIEnv *, jobject, jbyteArray);
+
 #ifdef __cplusplus
 }
 #endif
