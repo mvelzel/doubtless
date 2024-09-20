@@ -1,3 +1,7 @@
+package com.doubtless.test
+
+import scala.util._
+
 class Test {
   @native def createBdd(expr: String): Array[Byte]
   @native def bdd2string(bdd: Array[Byte]): String
@@ -18,11 +22,11 @@ object Test {
     val dict = test.createDict(dictString)
 
     val dictFormatted = test.dict2string(dict)
-    println(s"The probability dictionary: $dictFormatted\n")
+    println(s"The probability dictionary: $dictFormatted")
 
     val bdd1 = test.createBdd("(x=1&y=1)|(z=2)")
     println(s"The test bdd1 expr: ${test.bdd2string(bdd1)}")
-    println(s"The test bdd1 prob: ${test.bddProb(dict, bdd1)}\n")
+    println(s"The test bdd1 prob: ${test.bddProb(dict, bdd1)}")
 
     println(s"The test !bdd1 expr: ${test.bdd2string(test.bddOperator("!", bdd1, null))}")
     println(s"The test !bdd1 prob: ${test.bddProb(dict, test.bddOperator("!", bdd1, null))}")
@@ -41,5 +45,23 @@ object Test {
     val bddOr = test.bddOperator("|", bdd1, bdd2)
     println(s"The test bdds after | expr: ${test.bdd2string(bddOr)}")
     println(s"The test bdds after | prob: ${test.bddProb(dict, bddOr)}")
+
+    val operatorError = Try { test.bddOperator("badoperator", bdd1, bdd2); }
+    operatorError match {
+      case Failure(e) => println(s"Bad operator test gave exception: $e")
+      case Success(_) => println("Should fail!")
+    }
+
+    val exprError = Try { test.createBdd("badexpr"); }
+    exprError match {
+      case Failure(e) => println(s"Bad expression test gave exception: $e")
+      case Success(_) => println("Should fail!")
+    }
+
+    val varDefsError = Try { test.createDict("badvardefs"); }
+    varDefsError match {
+      case Failure(e) => println(s"Bad varDefs test gave exception: $e")
+      case Success(_) => println("Should fail!")
+    }
   }
 }

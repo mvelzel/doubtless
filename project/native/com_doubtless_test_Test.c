@@ -1,4 +1,4 @@
-#include "Test.h"
+#include "com_doubtless_test_Test.h"
 
 #include "test_config.h"
 
@@ -11,12 +11,22 @@
 #include "dictionary.h"
 #include "bdd.h"
 
-JNIEXPORT jbyteArray JNICALL Java_Test_createBdd
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_createBdd
 (JNIEnv* env, jobject obj, jstring expr) {
     const char* expr_chars = (*env)->GetStringUTFChars(env, expr, 0);
     char* _errmsg = NULL;
 
-    bdd* bdd = create_bdd(BDD_DEFAULT, (char*)expr_chars, &_errmsg, 0);
+    bdd* bdd = NULL;
+    if (!(bdd = create_bdd(BDD_DEFAULT, (char*)expr_chars, &_errmsg, 0))) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+
+        (*env)->ReleaseStringUTFChars(env, expr, expr_chars);
+
+        (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
+
+        return 0;
+    }
+
 
     (*env)->ReleaseStringUTFChars(env, expr, expr_chars);
 
@@ -25,7 +35,7 @@ JNIEXPORT jbyteArray JNICALL Java_Test_createBdd
     return ret;
 }
 
-JNIEXPORT jstring JNICALL Java_Test_bdd2string
+JNIEXPORT jstring JNICALL Java_com_doubtless_test_Test_bdd2string
 (JNIEnv* env, jobject obj, jbyteArray bdd_arr) {
     pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
 
@@ -40,7 +50,7 @@ JNIEXPORT jstring JNICALL Java_Test_bdd2string
     return res;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_Test_bddOperator
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_bddOperator
 (JNIEnv* env, jobject obj, jstring operator, jbyteArray left_bdd_arr, jbyteArray right_bdd_arr) {
     const char* operator_chars = (*env)->GetStringUTFChars(env, operator, 0);
     jbyte* left_bdd_bytes = (*env)->GetByteArrayElements(env, left_bdd_arr, NULL);
@@ -49,20 +59,32 @@ JNIEXPORT jbyteArray JNICALL Java_Test_bddOperator
         right_bdd_bytes = (*env)->GetByteArrayElements(env, right_bdd_arr, NULL);
     char* _errmsg = NULL;
     
-    bdd* resBdd = bdd_operator(*operator_chars, BY_APPLY, (bdd*)left_bdd_bytes, (bdd*)right_bdd_bytes, &_errmsg);
+    bdd* res_bdd = NULL;
+    if (!(res_bdd = bdd_operator(*operator_chars, BY_APPLY, (bdd*)left_bdd_bytes, (bdd*)right_bdd_bytes, &_errmsg))) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+
+        if (right_bdd_bytes != NULL)
+            (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, 0);
+        (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, 0);
+        (*env)->ReleaseStringUTFChars(env, operator, operator_chars);
+
+        (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
+
+        return 0;
+    }
 
     if (right_bdd_bytes != NULL)
         (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, 0);
     (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, 0);
     (*env)->ReleaseStringUTFChars(env, operator, operator_chars);
 
-    jbyteArray ret = (*env)->NewByteArray(env, resBdd->bytesize);
-    (*env)->SetByteArrayRegion(env, ret, 0, resBdd->bytesize, (jbyte*)resBdd);
+    jbyteArray ret = (*env)->NewByteArray(env, res_bdd->bytesize);
+    (*env)->SetByteArrayRegion(env, ret, 0, res_bdd->bytesize, (jbyte*)res_bdd);
 
     return ret;
 }
 
-JNIEXPORT jdouble JNICALL Java_Test_bddProb
+JNIEXPORT jdouble JNICALL Java_com_doubtless_test_Test_bddProb
 (JNIEnv* env, jobject obj, jbyteArray dict_arr, jbyteArray bdd_arr) {
     char* _errmsg;
 
@@ -77,7 +99,7 @@ JNIEXPORT jdouble JNICALL Java_Test_bddProb
     return (jdouble)prob;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_Test_createDict
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_createDict
 (JNIEnv* env, jobject obj, jstring vardefs) {
     bdd_dictionary new_dict_struct, *dict;
     bdd_dictionary* storage_dict = NULL;
@@ -86,7 +108,17 @@ JNIEXPORT jbyteArray JNICALL Java_Test_createDict
     const char* vardefs_chars = (*env)->GetStringUTFChars(env, vardefs, 0);
 
     dict = bdd_dictionary_create(&new_dict_struct);
-    modify_dictionary(dict, DICT_ADD, (char*)vardefs_chars, &_errmsg);
+
+    if (!modify_dictionary(dict, DICT_ADD, (char*)vardefs_chars, &_errmsg)) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+
+        (*env)->ReleaseStringUTFChars(env, vardefs, vardefs_chars);
+
+        (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
+
+        return 0;
+    }
+
     storage_dict = dictionary_prepare2store(dict);
 
     (*env)->ReleaseStringUTFChars(env, vardefs, vardefs_chars);
@@ -97,7 +129,7 @@ JNIEXPORT jbyteArray JNICALL Java_Test_createDict
     return ret;
 }
 
-JNIEXPORT jstring JNICALL Java_Test_dict2string
+JNIEXPORT jstring JNICALL Java_com_doubtless_test_Test_dict2string
 (JNIEnv* env, jobject obj, jbyteArray dict_arr) {
     pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
 
