@@ -1,6 +1,6 @@
 package com.doubtless.bdd
 
-class BDD(val buffer: Array[Byte]) {
+class BDD private (private val buffer: Array[Byte]) {
   def this(expr: String) = this(Native.createBdd(expr))
 
   def |(that: BDD) = new BDD(Native.bddOperator("|", buffer, that.buffer))
