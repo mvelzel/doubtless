@@ -11,6 +11,7 @@ private[bdd] object Native extends NativeLoader("bdd") {
       rightBdd: Array[Byte]
   ): Array[Byte]
   @native def bddProb(dict: Array[Byte], bdd: Array[Byte]): Double
+  @native def bddEqual(leftBdd: Array[Byte], rightBdd: Array[Byte]): Boolean
 
   @native def createDict(varDefs: String): Array[Byte]
   @native def dict2string(dict: Array[Byte]): String
