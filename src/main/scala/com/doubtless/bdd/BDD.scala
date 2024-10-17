@@ -12,7 +12,7 @@ class BDD private (private val buffer: Array[Byte]) {
   override def toString(): String = Native.bdd2string(buffer)
   
   override def equals(bdd: Any) = bdd match {
-    case b: BDD => Native.bddEqual(buffer, b.buffer)
+    case b: BDD => Native.bddEquiv(buffer, b.buffer)
     case _ => false
   }
 }

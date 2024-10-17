@@ -106,6 +106,21 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEqual
     jbyte* left_bdd_bytes = (*env)->GetByteArrayElements(env, left_bdd_arr, NULL);
     jbyte* right_bdd_bytes = (*env)->GetByteArrayElements(env, right_bdd_arr, NULL);
 
+    jboolean equal = bdd_equal((bdd*)left_bdd_bytes, (bdd*)right_bdd_bytes, &_errmsg);
+    
+    (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, 0);
+
+    return equal;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEquiv
+(JNIEnv* env, jobject obj, jbyteArray left_bdd_arr, jbyteArray right_bdd_arr) {
+    char* _errmsg;
+
+    jbyte* left_bdd_bytes = (*env)->GetByteArrayElements(env, left_bdd_arr, NULL);
+    jbyte* right_bdd_bytes = (*env)->GetByteArrayElements(env, right_bdd_arr, NULL);
+
     jboolean equal = bdd_equiv((bdd*)left_bdd_bytes, (bdd*)right_bdd_bytes, &_errmsg);
     
     (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, 0);

@@ -49,6 +49,14 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEqual
 
 /*
  * Class:      com_doubtless_bdd_Native_00024
+ * Method:     bddEquiv
+ * Signature:  ([B[B)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEquiv
+  (JNIEnv *, jobject, jbyteArray, jbyteArray);
+
+/*
+ * Class:      com_doubtless_bdd_Native_00024
  * Method:     createDict
  * Signature:  (Ljava/lang/String;)[B
  */
