@@ -1,7 +1,7 @@
 sbt
     javah
 
-gcc -shared -fPIC -g -I/usr/include -I$JAVA_HOME/include -I$JAVA_HOME/include/linux bdd.c dictionary.c utils.c vector.c com_doubtless_test_Test.c -o libTest.so
+gcc -shared -fPIC -g -I/usr/include -I$JAVA_HOME/include -I$JAVA_HOME/include/linux bdd.c dictionary.c utils.c vector.c com_doubtless_bdd_Native_00024.c -o libbdd.so
 
 sbt
     run

@@ -1,4 +1,4 @@
-#include "com_doubtless_test_Test.h"
+#include "com_doubtless_bdd_Native_00024.h"
 
 #include "test_config.h"
 
@@ -11,7 +11,7 @@
 #include "dictionary.h"
 #include "bdd.h"
 
-JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_createBdd
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_createBdd
 (JNIEnv* env, jobject obj, jstring expr) {
     const char* expr_chars = (*env)->GetStringUTFChars(env, expr, 0);
     char* _errmsg = NULL;
@@ -35,7 +35,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_createBdd
     return ret;
 }
 
-JNIEXPORT jstring JNICALL Java_com_doubtless_test_Test_bdd2string
+JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_bdd2string
 (JNIEnv* env, jobject obj, jbyteArray bdd_arr) {
     pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
 
@@ -50,7 +50,7 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_test_Test_bdd2string
     return res;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_bddOperator
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_bddOperator
 (JNIEnv* env, jobject obj, jstring operator, jbyteArray left_bdd_arr, jbyteArray right_bdd_arr) {
     const char* operator_chars = (*env)->GetStringUTFChars(env, operator, 0);
     jbyte* left_bdd_bytes = (*env)->GetByteArrayElements(env, left_bdd_arr, NULL);
@@ -84,7 +84,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_bddOperator
     return ret;
 }
 
-JNIEXPORT jdouble JNICALL Java_com_doubtless_test_Test_bddProb
+JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_bddProb
 (JNIEnv* env, jobject obj, jbyteArray dict_arr, jbyteArray bdd_arr) {
     char* _errmsg;
 
@@ -99,7 +99,7 @@ JNIEXPORT jdouble JNICALL Java_com_doubtless_test_Test_bddProb
     return (jdouble)prob;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_createDict
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_createDict
 (JNIEnv* env, jobject obj, jstring vardefs) {
     bdd_dictionary new_dict_struct, *dict;
     bdd_dictionary* storage_dict = NULL;
@@ -129,7 +129,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_test_Test_createDict
     return ret;
 }
 
-JNIEXPORT jstring JNICALL Java_com_doubtless_test_Test_dict2string
+JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_dict2string
 (JNIEnv* env, jobject obj, jbyteArray dict_arr) {
     pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
 
