@@ -1,5 +1,5 @@
-ThisBuild / scalaVersion := "3.5.1"
-ThisBuild / organization := "com.doubtless"
+scalaVersion := "3.5.1"
+organization := "com.doubtless"
 
 javah / target := file("project/native")
 

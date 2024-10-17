@@ -27,7 +27,6 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_createBdd
         return 0;
     }
 
-
     (*env)->ReleaseStringUTFChars(env, expr, expr_chars);
 
     jbyteArray ret = (*env)->NewByteArray(env, bdd->bytesize);
