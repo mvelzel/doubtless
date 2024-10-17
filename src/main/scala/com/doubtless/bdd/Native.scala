@@ -2,7 +2,7 @@ package com.doubtless.bdd
 
 import com.github.sbt.jni.syntax.NativeLoader
 
-object Native extends NativeLoader("bdd") {
+private[bdd] object Native extends NativeLoader("bdd") {
   @native def createBdd(expr: String): Array[Byte]
   @native def bdd2string(bdd: Array[Byte]): String
   @native def bddOperator(
