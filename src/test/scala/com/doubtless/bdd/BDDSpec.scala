@@ -35,9 +35,10 @@ class BDDSpec extends FixtureAnyFunSpec {
       assert(~bdd2 == new BDD("!(x=2&z=1&y=2)"))
     }
 
-    it("should correctly calculate probabilities with a dict") { (bdd1, bdd2, dict) =>
-      assert(bdd1.probability(dict) == 0.942)
-      assert(bdd2.probability(dict) == 0.012)
+    it("should correctly calculate probabilities with a dict") {
+      (bdd1, bdd2, dict) =>
+        assert(bdd1.probability(dict) == 0.942)
+        assert(bdd2.probability(dict) == 0.012)
     }
 
     describe("with another BDD") {
