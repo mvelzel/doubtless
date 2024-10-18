@@ -1,5 +1,4 @@
 import org.scalatest.funspec.FixtureAnyFunSpec
-import org.scalactic.source.Position
 import com.doubtless.bdd._
 
 class BDDSpec extends FixtureAnyFunSpec {

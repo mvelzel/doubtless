@@ -16,4 +16,11 @@ private[bdd] object Native extends NativeLoader("bdd") {
 
   @native def createDict(varDefs: String): Array[Byte]
   @native def dict2string(dict: Array[Byte]): String
+  @native def printDict(dict: Array[Byte]): String
+  @native def modifyDict(
+      dict: Array[Byte],
+      mode: Int,
+      dictDef: String
+  ): Array[Byte]
+  @native def getKeys(dict: Array[Byte]): Array[String]
 }

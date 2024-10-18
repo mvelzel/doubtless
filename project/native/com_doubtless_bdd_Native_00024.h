@@ -71,6 +71,30 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_createDict
 JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_dict2string
   (JNIEnv *, jobject, jbyteArray);
 
+/*
+ * Class:      com_doubtless_bdd_Native_00024
+ * Method:     printDict
+ * Signature:  ([B)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_printDict
+  (JNIEnv *, jobject, jbyteArray);
+
+/*
+ * Class:      com_doubtless_bdd_Native_00024
+ * Method:     modifyDict
+ * Signature:  ([BILjava/lang/String;)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_modifyDict
+  (JNIEnv *, jobject, jbyteArray, jint, jstring);
+
+/*
+ * Class:      com_doubtless_bdd_Native_00024
+ * Method:     getKeys
+ * Signature:  ([B)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_com_doubtless_bdd_Native_00024_getKeys
+  (JNIEnv *, jobject, jbyteArray);
+
 #ifdef __cplusplus
 }
 #endif
