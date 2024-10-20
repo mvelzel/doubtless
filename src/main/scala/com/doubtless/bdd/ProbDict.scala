@@ -3,8 +3,14 @@ package com.doubtless.bdd
 import scala.collection.immutable.{Map, MapOps}
 
 case class RandVar(name: String, value: Int) {
-  require(!name.matches("^.*[:=;].*$"), "variable name cannot contain ':', '=', or ';'.")
-  require(name.length <= 11, "variable name cannot be longer than 11 characters.")
+  require(
+    !name.matches("^.*[:=;].*$"),
+    "variable name cannot contain ':', '=', or ';'."
+  )
+  require(
+    name.length <= 11,
+    "variable name cannot be longer than 11 characters."
+  )
 
   override def toString(): String = s"$name=$value"
 }
