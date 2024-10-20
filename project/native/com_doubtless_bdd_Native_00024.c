@@ -32,6 +32,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_createBdd
     jbyteArray ret = (*env)->NewByteArray(env, bdd->bytesize);
     (*env)->SetByteArrayRegion(env, ret, 0, bdd->bytesize, (jbyte*)bdd);
 
+    V_rva_node_free(&bdd->tree);
     free(bdd);
     bdd = NULL;
 
@@ -51,7 +52,7 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_bdd2string
     jstring res = (*env)->NewStringUTF(env, pbuff->buffer);
     pbuff_free(pbuff);
 
-    (*env)->ReleaseByteArrayElements(env, bdd_arr, bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, bdd_arr, bytes, JNI_ABORT);
 
     return res;
 }
@@ -77,8 +78,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_bddOperator
         jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
 
         if (right_bdd_bytes != NULL)
-            (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, 0);
-        (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, 0);
+            (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, JNI_ABORT);
+        (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, JNI_ABORT);
         (*env)->ReleaseStringUTFChars(env, operator, operator_chars);
 
         (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
@@ -87,13 +88,14 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_bddOperator
     }
 
     if (right_bdd_bytes != NULL)
-        (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, 0);
-    (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, 0);
+        (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, JNI_ABORT);
     (*env)->ReleaseStringUTFChars(env, operator, operator_chars);
 
     jbyteArray ret = (*env)->NewByteArray(env, res_bdd->bytesize);
     (*env)->SetByteArrayRegion(env, ret, 0, res_bdd->bytesize, (jbyte*)res_bdd);
 
+    V_rva_node_free(&res_bdd->tree);
     free(res_bdd);
     res_bdd = NULL;
 
@@ -109,6 +111,8 @@ JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_bddProb
     bdd_dictionary* dict = (bdd_dictionary*) dict_bytes;
     dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
     dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
+    dict->variables->items = dict->variables->fixed;
+    dict->values->items = dict->values->fixed;
 
     jbyte* bdd_bytes = (*env)->GetByteArrayElements(env, bdd_arr, NULL);
     bdd* bdd_struct = (bdd*)bdd_bytes;
@@ -116,8 +120,8 @@ JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_bddProb
 
     double prob = bdd_probability(dict, bdd_struct, NULL, 0, &_errmsg);
 
-    (*env)->ReleaseByteArrayElements(env, dict_arr, dict_bytes, 0);
-    (*env)->ReleaseByteArrayElements(env, bdd_arr, bdd_bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, dict_arr, dict_bytes, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, bdd_arr, bdd_bytes, JNI_ABORT);
 
     return (jdouble)prob;
 }
@@ -137,8 +141,8 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEqual
 
     jboolean equal = bdd_equal(left_bdd, right_bdd, &_errmsg);
     
-    (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, 0);
-    (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, JNI_ABORT);
 
     return equal;
 }
@@ -158,8 +162,8 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEquiv
 
     jboolean equal = bdd_equiv(left_bdd, right_bdd, &_errmsg);
     
-    (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, 0);
-    (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, JNI_ABORT);
 
     return equal;
 }
@@ -209,6 +213,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_createDict
     jbyteArray ret = (*env)->NewByteArray(env, storage_dict->bytesize);
     (*env)->SetByteArrayRegion(env, ret, 0, storage_dict->bytesize, (jbyte*)storage_dict);
 
+    V_dict_var_free(storage_dict->variables);
+    V_dict_val_free(storage_dict->values);
     free(storage_dict);
     storage_dict = NULL;
 
@@ -224,17 +230,19 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_dict2string
 
     dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
     dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
+    dict->variables->items = dict->variables->fixed;
+    dict->values->items = dict->values->fixed;
 
     bprintf(
         pbuff,
         "[Dictionary(#vars=%d, #values=%d)]",
         V_dict_var_size(dict->variables),
-        V_dict_val_size(dict->values)-dict->val_deleted
+        V_dict_val_size(dict->values) - dict->val_deleted
     );
     jstring res = (*env)->NewStringUTF(env, pbuff->buffer);
     pbuff_free(pbuff);
 
-    (*env)->ReleaseByteArrayElements(env, dict_arr, bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, dict_arr, bytes, JNI_ABORT);
 
     return res;
 }
@@ -248,12 +256,14 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_printDict
 
     dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
     dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
+    dict->variables->items = dict->variables->fixed;
+    dict->values->items = dict->values->fixed;
 
     bdd_dictionary_print(dict, 0, pbuff);
     jstring res = (*env)->NewStringUTF(env, pbuff->buffer);
     pbuff_free(pbuff);
 
-    (*env)->ReleaseByteArrayElements(env, dict_arr, bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, dict_arr, bytes, JNI_ABORT);
 
     return res;
 }
@@ -261,6 +271,7 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_printDict
 JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_modifyDict
 (JNIEnv* env, jobject obj, jbyteArray dict_arr, jint mode, jstring dict_def) {
     jbyte* dict_arr_bytes = (*env)->GetByteArrayElements(env, dict_arr, NULL);
+
     const char* dict_def_chars = (*env)->GetStringUTFChars(env, dict_def, 0);
     char* _errmsg = NULL;
     bdd_dictionary* storage_dict = NULL;
@@ -269,12 +280,14 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_modifyDict
 
     dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
     dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
+    dict->variables->items = dict->variables->fixed;
+    dict->values->items = dict->values->fixed;
 
     if (!modify_dictionary(dict, (int)mode, (char*)dict_def_chars, &_errmsg)) {
         jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
 
         (*env)->ReleaseStringUTFChars(env, dict_def, dict_def_chars);
-        (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, 0);
+        (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, JNI_ABORT);
 
         (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
 
@@ -286,7 +299,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_modifyDict
         jclass error_class = (*env)->FindClass(env, "java/lang/RuntimeException");
 
         (*env)->ReleaseStringUTFChars(env, dict_def, dict_def_chars);
-        (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, 0);
+        (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, JNI_ABORT);
 
         (*env)->ThrowNew(env, error_class, "dictionary_add: internal error serialize/free/sort");
 
@@ -297,8 +310,10 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_modifyDict
     (*env)->SetByteArrayRegion(env, ret, 0, storage_dict->bytesize, (jbyte*)storage_dict);
 
     (*env)->ReleaseStringUTFChars(env, dict_def, dict_def_chars);
-    (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, JNI_ABORT);
 
+    V_dict_var_free(storage_dict->variables);
+    V_dict_val_free(storage_dict->values);
     free(storage_dict);
     storage_dict = NULL;
 
@@ -312,6 +327,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_doubtless_bdd_Native_00024_getKeys
 
     dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
     dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
+    dict->variables->items = dict->variables->fixed;
+    dict->values->items = dict->values->fixed;
 
     jobjectArray ret = (*env)->NewObjectArray(
         env,
@@ -337,7 +354,29 @@ JNIEXPORT jobjectArray JNICALL Java_com_doubtless_bdd_Native_00024_getKeys
         }
     }
 
-    (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, 0);
+    (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, JNI_ABORT);
+
+    return ret;
+}
+
+JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_lookupProb
+(JNIEnv* env, jobject obj, jbyteArray dict_arr, jstring var_name, jint var_val) {
+    jbyte* dict_arr_bytes = (*env)->GetByteArrayElements(env, dict_arr, NULL);
+    bdd_dictionary* dict = (bdd_dictionary*) dict_arr_bytes;
+    dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
+    dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
+    dict->variables->items = dict->variables->fixed;
+    dict->values->items = dict->values->fixed;
+
+    const char* var_name_chars = (*env)->GetStringUTFChars(env, var_name, 0);
+
+    struct rva variable;
+    variable.val = (int) var_val;
+    strcpy(variable.var, var_name_chars);
+
+    double ret = lookup_probability(dict, &variable);
+
+    (*env)->ReleaseByteArrayElements(env, dict_arr, dict_arr_bytes, JNI_ABORT);
 
     return ret;
 }

@@ -95,6 +95,14 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_modifyDict
 JNIEXPORT jobjectArray JNICALL Java_com_doubtless_bdd_Native_00024_getKeys
   (JNIEnv *, jobject, jbyteArray);
 
+/*
+ * Class:      com_doubtless_bdd_Native_00024
+ * Method:     lookupProb
+ * Signature:  ([BLjava/lang/String;I)D
+ */
+JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_lookupProb
+  (JNIEnv *, jobject, jbyteArray, jstring, jint);
+
 #ifdef __cplusplus
 }
 #endif

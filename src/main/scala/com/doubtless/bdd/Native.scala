@@ -23,4 +23,5 @@ private[bdd] object Native extends NativeLoader("bdd") {
       dictDef: String
   ): Array[Byte]
   @native def getKeys(dict: Array[Byte]): Array[String]
+  @native def lookupProb(dict: Array[Byte], varName: String, varVal: Int): Double
 }
