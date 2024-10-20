@@ -29,7 +29,7 @@ class BDDSpec extends FixtureAnyFunSpec {
       assertThrows[IllegalArgumentException](new BDD("bad argument"))
     }
 
-    it("should correctly be inverted with ~") { (bdd1, bdd2, _) =>
+    it("should correctly invert with ~") { (bdd1, bdd2, _) =>
       assert(~bdd1 == new BDD("!((x=1&y=1)|(z=2))"))
       assert(~bdd2 == new BDD("!(x=2&z=1&y=2)"))
     }

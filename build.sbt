@@ -16,6 +16,7 @@ libraryDependencies ++= Seq(
   ("org.apache.spark" %% "spark-sql" % "3.5.3")
     .exclude("org.scala-lang.modules", "scala-xml_2.13")
     .cross(CrossVersion.for3Use2_13),
+  "org.scalactic" %% "scalactic" % "3.2.19",
   "org.scalatest" %% "scalatest-funspec" % "3.2.19" % "test"
 )
 

@@ -1,7 +1,5 @@
 package com.doubtless.bdd
 
-import scala.collection.immutable.{Map, MapOps}
-
 case class RandVar(name: String, value: Int) {
   require(
     !name.matches("^.*[:=;].*$"),
@@ -62,7 +60,13 @@ class ProbDict private (
     }
   }
 
-  override def updated[V1 >: Double](key: RandVar, value: V1): ProbDict = ???
+  override def updated[V1 >: Double](key: RandVar, value: V1): ProbDict = {
+    if (varKeys contains key) {
+      new ProbDict(Native.modifyDict(buffer, 3, s"${key.toString}:$value"))
+    } else {
+      new ProbDict(Native.modifyDict(buffer, 1, s"${key.toString}:$value"))
+    }
+  }
 
   override def get(key: RandVar): Option[Double] = {
     if (varKeys contains key) {
@@ -71,4 +75,8 @@ class ProbDict private (
       None
     }
   }
+}
+
+object ProbDict {
+  def apply(elems: (RandVar, Double)*) = new ProbDict(elems.map({ case (v, p) => s"$v:$p" }).mkString(";"))
 }
