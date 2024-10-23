@@ -47,7 +47,10 @@ class ProbDict private (
   override def toString(): String =
     Native.printDict(buffer).filter(_ >= ' ').trim
 
-  override def iterator: Iterator[(RandVar, Double)] = ???
+  override def iterator: Iterator[(RandVar, Double)] =
+    varKeys.iterator.map(randVar =>
+      (randVar, Native.lookupProb(buffer, randVar.name, randVar.value))
+    )
 
   override def removed(key: RandVar): ProbDict = {
     if (varKeys contains key) {
@@ -74,10 +77,33 @@ class ProbDict private (
       None
     }
   }
+
+  // We would like to use Native.mergeDicts, but this method does not allow overwriting random variables.
+  //
+  // override def concat[V2 >: Double](
+  //     suffix: IterableOnce[(RandVar, V2)]
+  // ): ProbDict = suffix match {
+  //   case dict: ProbDict => new ProbDict(Native.modifyDict(buffer, 3, dict.toString()))
+  //   case _ =>
+  //     new ProbDict(
+  //       Native.mergeDicts(buffer, ProbDict(suffix.iterator.toSeq*).buffer)
+  //     )
+  // }
+  override def concat[V2 >: Double](
+      suffix: IterableOnce[(RandVar, V2)]
+  ): ProbDict = ProbDict(super.concat(suffix).toSeq*)
 }
 
 object ProbDict {
-  def apply(elems: (RandVar, Double)*) = new ProbDict(
-    Native.createDict(elems.map({ case (v, p) => s"$v:$p" }).mkString(";"))
+  // We would like not to have to sort here, but there is a bug in DuBio
+  // A string like 'x=1:0.9;y=1:0.9;y=2:0.1;x=2:0.1;x=3:0.4'
+  // gives different results from 'x=1:0.9;x=2:0.1;x=3:0.4;y=1:0.9;y=2:0.1'
+  def apply[V2 >: Double](elems: (RandVar, V2)*) = new ProbDict(
+    Native.createDict(
+      elems
+        .sortBy({ case (v, p) => (v.name, v.value) })
+        .map({ case (v, p) => s"$v:$p" })
+        .mkString(";")
+    )
   )
 }

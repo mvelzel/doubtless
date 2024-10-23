@@ -8,9 +8,9 @@ class ProbDictSpec extends FixtureAnyFunSpec {
   override def withFixture(test: OneArgTest) = {
     val dict = ProbDict(
       RandVar("x", 1) -> 0.6,
+      RandVar("y", 1) -> 1.4,
+      RandVar("y", 2) -> 0.6,
       RandVar("x", 2) -> 0.4,
-      RandVar("y", 1) -> 0.7,
-      RandVar("y", 2) -> 0.3,
       RandVar("z", 1) -> 0.1,
       RandVar("z", 2) -> 0.9
     );
@@ -18,7 +18,7 @@ class ProbDictSpec extends FixtureAnyFunSpec {
   }
 
   describe("A ProbDict") {
-    it("should correctly instantiate") { dict =>
+    it("should correctly instantiate and normalise") { dict =>
       assert(
         dict.toString() == "x=1:0.600000; x=2:0.400000; y=1:0.700000; y=2:0.300000; z=1:0.100000; z=2:0.900000;"
       )
@@ -67,6 +67,52 @@ class ProbDictSpec extends FixtureAnyFunSpec {
       assert(instDict(RandVar("x", 3)) === 0.2 +- 0.001)
       assert(instDict(RandVar("y", 1)) === 0.4 +- 0.001)
       assert(instDict(RandVar("y", 2)) === 0.6 +- 0.001)
+    }
+
+    it("should correctly update and normalise random variables") { dict =>
+      assert(dict(RandVar("x", 1)) == 0.6)
+
+      val newDict = dict + (RandVar("x", 1) -> 0.4)
+      assert(newDict(RandVar("x", 1)) == 0.5)
+      assert(newDict(RandVar("x", 2)) == 0.5)
+
+      assert(dict(RandVar("y", 2)) == 0.3)
+
+      val finalDict = newDict + (RandVar("y", 2) -> 0.0)
+      assert(finalDict(RandVar("y", 1)) == 1.0)
+      assert(finalDict(RandVar("y", 2)) == 0.0)
+    }
+
+    it("should correctly iterate the variables and their probabilities") { dict =>
+      var total = 0
+      dict.foreach({ case (v, p) =>
+        assert(dict(v) == p) 
+        total += 1
+      })
+
+      assert(total == dict.size)
+    }
+
+    describe("with another ProbDict") {
+      it("should correctly merge and normalise their variables and probabilities") { dict =>
+        val otherDict = ProbDict(
+          RandVar("x", 1) -> 0.1,
+          RandVar("x", 3) -> 0.9,
+          RandVar("y", 2) -> 0.1,
+          RandVar("y", 3) -> 0.5,
+          RandVar("y", 4) -> 0.4
+        )
+
+        val newDict = dict ++ otherDict
+        assert(newDict(RandVar("x", 1)) === 0.1 / 1.4 +- 0.001)
+        assert(newDict(RandVar("x", 2)) === 0.4 / 1.4 +- 0.001)
+        assert(newDict(RandVar("x", 3)) === 0.9 / 1.4 +- 0.001)
+
+        assert(newDict(RandVar("y", 1)) === 0.7 / 1.7 +- 0.001)
+        assert(newDict(RandVar("y", 2)) === 0.1 / 1.7 +- 0.001)
+        assert(newDict(RandVar("y", 3)) === 0.5 / 1.7 +- 0.001)
+        assert(newDict(RandVar("y", 4)) === 0.4 / 1.7 +- 0.001)
+      }
     }
   }
 }

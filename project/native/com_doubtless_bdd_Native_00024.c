@@ -380,3 +380,61 @@ JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_lookupProb
 
     return ret;
 }
+
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_mergeDicts
+(JNIEnv* env, jobject obj, jbyteArray left_dict_arr, jbyteArray right_dict_arr) {
+    jbyte* left_dict_arr_bytes = (*env)->GetByteArrayElements(env, left_dict_arr, NULL);
+    bdd_dictionary* left_dict = (bdd_dictionary*) left_dict_arr_bytes;
+    left_dict->variables = (V_dict_var*) &left_dict->buff[left_dict->var_offset];
+    left_dict->values = (V_dict_val*) &left_dict->buff[left_dict->val_offset];
+    left_dict->variables->items = left_dict->variables->fixed;
+    left_dict->values->items = left_dict->values->fixed;
+
+    jbyte* right_dict_arr_bytes = (*env)->GetByteArrayElements(env, right_dict_arr, NULL);
+    bdd_dictionary* right_dict = (bdd_dictionary*) right_dict_arr_bytes;
+    right_dict->variables = (V_dict_var*) &right_dict->buff[right_dict->var_offset];
+    right_dict->values = (V_dict_val*) &right_dict->buff[right_dict->val_offset];
+    right_dict->variables->items = right_dict->variables->fixed;
+    right_dict->values->items = right_dict->values->fixed;
+
+    bdd_dictionary s_merged_dict;
+    bdd_dictionary* merged_dict = NULL;
+    bdd_dictionary* storage_dict = NULL;
+
+    char* _errmsg = NULL;
+    if (!(merged_dict = merge_dictionary(&s_merged_dict, left_dict, right_dict, &_errmsg))) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+
+        (*env)->ReleaseByteArrayElements(env, left_dict_arr, left_dict_arr_bytes, JNI_ABORT);
+        (*env)->ReleaseByteArrayElements(env, right_dict_arr, right_dict_arr_bytes, JNI_ABORT);
+
+        (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
+
+        return 0;
+    }
+
+    storage_dict = dictionary_prepare2store(merged_dict);
+    if (!storage_dict) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/RuntimeException");
+
+        (*env)->ReleaseByteArrayElements(env, left_dict_arr, left_dict_arr_bytes, JNI_ABORT);
+        (*env)->ReleaseByteArrayElements(env, right_dict_arr, right_dict_arr_bytes, JNI_ABORT);
+
+        (*env)->ThrowNew(env, error_class, "dictionary_add: internal error serialize/free/sort");
+
+        return 0;
+    }
+
+    jbyteArray ret = (*env)->NewByteArray(env, storage_dict->bytesize);
+    (*env)->SetByteArrayRegion(env, ret, 0, storage_dict->bytesize, (jbyte*)storage_dict);
+
+    (*env)->ReleaseByteArrayElements(env, left_dict_arr, left_dict_arr_bytes, JNI_ABORT);
+    (*env)->ReleaseByteArrayElements(env, right_dict_arr, right_dict_arr_bytes, JNI_ABORT);
+
+    V_dict_var_free(storage_dict->variables);
+    V_dict_val_free(storage_dict->values);
+    free(storage_dict);
+    storage_dict = NULL;
+
+    return ret;
+}

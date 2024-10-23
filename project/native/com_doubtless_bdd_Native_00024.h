@@ -103,6 +103,14 @@ JNIEXPORT jobjectArray JNICALL Java_com_doubtless_bdd_Native_00024_getKeys
 JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_lookupProb
   (JNIEnv *, jobject, jbyteArray, jstring, jint);
 
+/*
+ * Class:      com_doubtless_bdd_Native_00024
+ * Method:     mergeDicts
+ * Signature:  ([B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_mergeDicts
+  (JNIEnv *, jobject, jbyteArray, jbyteArray);
+
 #ifdef __cplusplus
 }
 #endif
