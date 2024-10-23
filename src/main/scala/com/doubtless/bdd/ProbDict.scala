@@ -95,9 +95,9 @@ class ProbDict private (
 }
 
 object ProbDict {
-  // We would like not to have to sort here, but there is a bug in DuBio
-  // A string like 'x=1:0.9;y=1:0.9;y=2:0.1;x=2:0.1;x=3:0.4'
-  // gives different results from 'x=1:0.9;x=2:0.1;x=3:0.4;y=1:0.9;y=2:0.1'
+  // We would like not to have to sort here, but there is a bug in DuBio.
+  // A string like "x=1:0.9;y=1:0.9;y=2:0.1;x=2:0.1;x=3:0.4"
+  // gives different results from "x=1:0.9;x=2:0.1;x=3:0.4;y=1:0.9;y=2:0.1".
   def apply[V2 >: Double](elems: (RandVar, V2)*) = new ProbDict(
     Native.createDict(
       elems

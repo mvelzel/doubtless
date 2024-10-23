@@ -115,6 +115,16 @@ class ProbDictSpec extends FixtureAnyFunSpec {
         assert(newDict(RandVar("y", 2)) === 0.1 / 1.7 +- 0.001)
         assert(newDict(RandVar("y", 3)) === 0.5 / 1.7 +- 0.001)
         assert(newDict(RandVar("y", 4)) === 0.4 / 1.7 +- 0.001)
+
+        val finalDict = otherDict ++ dict
+        assert(finalDict(RandVar("x", 1)) === 0.6 / 1.9 +- 0.001)
+        assert(finalDict(RandVar("x", 2)) === 0.4 / 1.9 +- 0.001)
+        assert(finalDict(RandVar("x", 3)) === 0.9 / 1.9 +- 0.001)
+
+        assert(finalDict(RandVar("y", 1)) === 0.7 / 1.9 +- 0.001)
+        assert(finalDict(RandVar("y", 2)) === 0.3 / 1.9 +- 0.001)
+        assert(finalDict(RandVar("y", 3)) === 0.5 / 1.9 +- 0.001)
+        assert(finalDict(RandVar("y", 4)) === 0.4 / 1.9 +- 0.001)
       }
     }
   }
