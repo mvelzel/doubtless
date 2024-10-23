@@ -41,7 +41,6 @@ class ProbDict private (
 ) extends Map[RandVar, Double] {
   private def this(buffer: Array[Byte]) =
     this(buffer, Native.getKeys(buffer).map(RandVar(_)).toSet)
-  def this(varDefs: String) = this(Native.createDict(varDefs))
 
   override def keys: Iterable[RandVar] = varKeys
 
@@ -78,5 +77,7 @@ class ProbDict private (
 }
 
 object ProbDict {
-  def apply(elems: (RandVar, Double)*) = new ProbDict(elems.map({ case (v, p) => s"$v:$p" }).mkString(";"))
+  def apply(elems: (RandVar, Double)*) = new ProbDict(
+    Native.createDict(elems.map({ case (v, p) => s"$v:$p" }).mkString(";"))
+  )
 }

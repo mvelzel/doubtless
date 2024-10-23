@@ -6,9 +6,14 @@ import org.scalactic.Tolerance._
 class ProbDictSpec extends FixtureAnyFunSpec {
   type FixtureParam = ProbDict
   override def withFixture(test: OneArgTest) = {
-    val dict = new ProbDict(
-      "x=1 : 0.6; x=2 : 0.4; y=1 : 0.7; y=2 : 0.3; z=1 : 0.1; z=2 : 0.9;"
-    )
+    val dict = ProbDict(
+      RandVar("x", 1) -> 0.6,
+      RandVar("x", 2) -> 0.4,
+      RandVar("y", 1) -> 0.7,
+      RandVar("y", 2) -> 0.3,
+      RandVar("z", 1) -> 0.1,
+      RandVar("z", 2) -> 0.9
+    );
     test(dict)
   }
 
