@@ -83,18 +83,21 @@ class ProbDictSpec extends FixtureAnyFunSpec {
       assert(finalDict(RandVar("y", 2)) == 0.0)
     }
 
-    it("should correctly iterate the variables and their probabilities") { dict =>
-      var total = 0
-      dict.foreach({ case (v, p) =>
-        assert(dict(v) == p) 
-        total += 1
-      })
+    it("should correctly iterate the variables and their probabilities") {
+      dict =>
+        var total = 0
+        dict.foreach({ case (v, p) =>
+          assert(dict(v) == p)
+          total += 1
+        })
 
-      assert(total == dict.size)
+        assert(total == dict.size)
     }
 
     describe("with another ProbDict") {
-      it("should correctly merge and normalise their variables and probabilities") { dict =>
+      it(
+        "should correctly merge and normalise their variables and probabilities"
+      ) { dict =>
         val otherDict = ProbDict(
           RandVar("x", 1) -> 0.1,
           RandVar("x", 3) -> 0.9,
