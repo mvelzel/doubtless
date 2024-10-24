@@ -2,12 +2,12 @@ package com.doubtless.bdd
 
 class BDD private (private val buffer: Array[Byte]) {
   def |(that: BDD) = new BDD(
-    Native.bddOperator("|", buffer.clone(), that.buffer.clone())
+    Native.bddOperator("|", buffer, that.buffer)
   )
   def &(that: BDD) = new BDD(
-    Native.bddOperator("&", buffer.clone(), that.buffer.clone())
+    Native.bddOperator("&", buffer, that.buffer)
   )
-  def unary_~ = new BDD(Native.bddOperator("!", buffer.clone(), null))
+  def unary_~ = new BDD(Native.bddOperator("!", buffer, null))
 
   def probability(dict: ProbDict) = Native.bddProb(dict.buffer, buffer)
 

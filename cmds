@@ -1,7 +1,9 @@
 sbt
     javah
 
-gcc -shared -fPIC -g -I$JAVA_HOME/include -I$JAVA_HOME/include/linux -DMALLOC=malloc -DREALLOC=realloc -DFREE=free bdd.c dictionary.c utils.c vector.c com_doubtless_bdd_Native_00024.c -o libbdd.so
+gcc -O3 -shared -fPIC -g -I$JAVA_HOME/include -I$JAVA_HOME/include/linux -DMALLOC=malloc -DREALLOC=realloc -DFREE=free bdd.c dictionary.c utils.c vector.c com_doubtless_bdd_Native_00024.c -o libbdd.so
+
+gcc -O3 -fPIC -DMALLOC=malloc -DREALLOC=realloc -DFREE=free bdd.c dictionary.c utils.c vector.c perftests.c -o perftests
 
 sbt
     run
