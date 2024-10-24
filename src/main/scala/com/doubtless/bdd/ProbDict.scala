@@ -1,5 +1,8 @@
 package com.doubtless.bdd
 
+import com.doubtless.spark.ProbDictUserDefinedType
+import org.apache.spark.sql.types.SQLUserDefinedType
+
 case class RandVar(name: String, value: Int) {
   require(
     !name.matches("^.*[:=;].*$"),
@@ -35,11 +38,12 @@ object RandVar {
   }
 }
 
+@SQLUserDefinedType(udt = classOf[ProbDictUserDefinedType])
 class ProbDict private (
-    private[bdd] val buffer: Array[Byte],
+    val buffer: Array[Byte],
     private val varKeys: Set[RandVar]
 ) extends Map[RandVar, Double] {
-  private def this(buffer: Array[Byte]) =
+  def this(buffer: Array[Byte]) =
     this(buffer, Native.getKeys(buffer).map(RandVar(_)).toSet)
 
   override def keys: Iterable[RandVar] = varKeys
@@ -91,7 +95,7 @@ class ProbDict private (
   // }
   override def concat[V2 >: Double](
       suffix: IterableOnce[(RandVar, V2)]
-  ): ProbDict = ProbDict(super.concat(suffix).toSeq:_*)
+  ): ProbDict = ProbDict(super.concat(suffix).toSeq: _*)
 }
 
 object ProbDict {
