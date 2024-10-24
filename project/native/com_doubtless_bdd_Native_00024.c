@@ -43,8 +43,7 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_bdd2string
 
     jbyte* bytes = (*env)->GetByteArrayElements(env, bdd_arr, NULL);
 
-    bdd* bdd_struct = (bdd*)bytes;
-    (&bdd_struct->tree)->items = (&bdd_struct->tree)->fixed;
+    bdd* bdd_struct = relocate_bdd((bdd*)bytes);
 
     bdd2string(pbuff, bdd_struct, 1);
     jstring res = (*env)->NewStringUTF(env, pbuff->buffer);
@@ -64,12 +63,11 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_bddOperator
         right_bdd_bytes = (*env)->GetByteArrayElements(env, right_bdd_arr, NULL);
     char* _errmsg = NULL;
 
-    bdd* left_bdd = (bdd*)left_bdd_bytes;
-    (&left_bdd->tree)->items = (&left_bdd->tree)->fixed;
+    bdd* left_bdd = relocate_bdd((bdd*)left_bdd_bytes);
 
-    bdd* right_bdd = (bdd*)right_bdd_bytes;
+    bdd* right_bdd = NULL;
     if (right_bdd_bytes != NULL)
-        (&right_bdd->tree)->items = (&right_bdd->tree)->fixed;
+        right_bdd = relocate_bdd((bdd*)right_bdd_bytes);
     
     bdd* res_bdd = NULL;
     if (!(res_bdd = bdd_operator(*operator_chars, BY_APPLY, left_bdd, right_bdd, &_errmsg))) {
@@ -106,15 +104,10 @@ JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_bddProb
 
     jbyte* dict_bytes = (*env)->GetByteArrayElements(env, dict_arr, NULL);
 
-    bdd_dictionary* dict = (bdd_dictionary*) dict_bytes;
-    dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
-    dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
-    dict->variables->items = dict->variables->fixed;
-    dict->values->items = dict->values->fixed;
+    bdd_dictionary* dict = bdd_dictionary_relocate((bdd_dictionary*)dict_bytes);
 
     jbyte* bdd_bytes = (*env)->GetByteArrayElements(env, bdd_arr, NULL);
-    bdd* bdd_struct = (bdd*)bdd_bytes;
-    (&bdd_struct->tree)->items = (&bdd_struct->tree)->fixed;
+    bdd* bdd_struct = relocate_bdd((bdd*)bdd_bytes);
 
     double prob = bdd_probability(dict, bdd_struct, NULL, 0, &_errmsg);
 
@@ -131,11 +124,8 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEqual
     jbyte* left_bdd_bytes = (*env)->GetByteArrayElements(env, left_bdd_arr, NULL);
     jbyte* right_bdd_bytes = (*env)->GetByteArrayElements(env, right_bdd_arr, NULL);
 
-    bdd* left_bdd = (bdd*)left_bdd_bytes;
-    (&left_bdd->tree)->items = (&left_bdd->tree)->fixed;
-
-    bdd* right_bdd = (bdd*)right_bdd_bytes;
-    (&right_bdd->tree)->items = (&right_bdd->tree)->fixed;
+    bdd* left_bdd = relocate_bdd((bdd*)left_bdd_bytes);
+    bdd* right_bdd = relocate_bdd((bdd*)right_bdd_bytes);
 
     jboolean equal = bdd_equal(left_bdd, right_bdd, &_errmsg);
     
@@ -152,11 +142,8 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEquiv
     jbyte* left_bdd_bytes = (*env)->GetByteArrayElements(env, left_bdd_arr, NULL);
     jbyte* right_bdd_bytes = (*env)->GetByteArrayElements(env, right_bdd_arr, NULL);
 
-    bdd* left_bdd = (bdd*)left_bdd_bytes;
-    (&left_bdd->tree)->items = (&left_bdd->tree)->fixed;
-
-    bdd* right_bdd = (bdd*)right_bdd_bytes;
-    (&right_bdd->tree)->items = (&right_bdd->tree)->fixed;
+    bdd* left_bdd = relocate_bdd((bdd*)left_bdd_bytes);
+    bdd* right_bdd = relocate_bdd((bdd*)right_bdd_bytes);
 
     jboolean equal = bdd_equiv(left_bdd, right_bdd, &_errmsg);
     
@@ -224,12 +211,7 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_dict2string
     pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
 
     jbyte* bytes = (*env)->GetByteArrayElements(env, dict_arr, NULL);
-    bdd_dictionary* dict = (bdd_dictionary*) bytes;
-
-    dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
-    dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
-    dict->variables->items = dict->variables->fixed;
-    dict->values->items = dict->values->fixed;
+    bdd_dictionary* dict = bdd_dictionary_relocate((bdd_dictionary*)bytes);
 
     bprintf(
         pbuff,
@@ -250,12 +232,7 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_printDict
     pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
 
     jbyte* bytes = (*env)->GetByteArrayElements(env, dict_arr, NULL);
-    bdd_dictionary* dict = (bdd_dictionary*) bytes;
-
-    dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
-    dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
-    dict->variables->items = dict->variables->fixed;
-    dict->values->items = dict->values->fixed;
+    bdd_dictionary* dict = bdd_dictionary_relocate((bdd_dictionary*)bytes);
 
     bdd_dictionary_print(dict, 0, pbuff);
     jstring res = (*env)->NewStringUTF(env, pbuff->buffer);
@@ -274,12 +251,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_modifyDict
     char* _errmsg = NULL;
     bdd_dictionary* storage_dict = NULL;
 
-    bdd_dictionary* dict = (bdd_dictionary*) dict_arr_bytes;
-
-    dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
-    dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
-    dict->variables->items = dict->variables->fixed;
-    dict->values->items = dict->values->fixed;
+    bdd_dictionary* dict = bdd_dictionary_relocate((bdd_dictionary*)dict_arr_bytes);
 
     if (!modify_dictionary(dict, (int)mode, (char*)dict_def_chars, &_errmsg)) {
         jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
@@ -321,12 +293,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_modifyDict
 JNIEXPORT jobjectArray JNICALL Java_com_doubtless_bdd_Native_00024_getKeys
 (JNIEnv* env, jobject obj, jbyteArray dict_arr) {
     jbyte* dict_arr_bytes = (*env)->GetByteArrayElements(env, dict_arr, NULL);
-    bdd_dictionary* dict = (bdd_dictionary*) dict_arr_bytes;
-
-    dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
-    dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
-    dict->variables->items = dict->variables->fixed;
-    dict->values->items = dict->values->fixed;
+    bdd_dictionary* dict = bdd_dictionary_relocate((bdd_dictionary*)dict_arr_bytes);
 
     jobjectArray ret = (*env)->NewObjectArray(
         env,
@@ -360,11 +327,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_doubtless_bdd_Native_00024_getKeys
 JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_lookupProb
 (JNIEnv* env, jobject obj, jbyteArray dict_arr, jstring var_name, jint var_val) {
     jbyte* dict_arr_bytes = (*env)->GetByteArrayElements(env, dict_arr, NULL);
-    bdd_dictionary* dict = (bdd_dictionary*) dict_arr_bytes;
-    dict->variables = (V_dict_var*) &dict->buff[dict->var_offset];
-    dict->values = (V_dict_val*) &dict->buff[dict->val_offset];
-    dict->variables->items = dict->variables->fixed;
-    dict->values->items = dict->values->fixed;
+    bdd_dictionary* dict = bdd_dictionary_relocate((bdd_dictionary*)dict_arr_bytes);
 
     const char* var_name_chars = (*env)->GetStringUTFChars(env, var_name, 0);
 
@@ -382,18 +345,10 @@ JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_lookupProb
 JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_mergeDicts
 (JNIEnv* env, jobject obj, jbyteArray left_dict_arr, jbyteArray right_dict_arr) {
     jbyte* left_dict_arr_bytes = (*env)->GetByteArrayElements(env, left_dict_arr, NULL);
-    bdd_dictionary* left_dict = (bdd_dictionary*) left_dict_arr_bytes;
-    left_dict->variables = (V_dict_var*) &left_dict->buff[left_dict->var_offset];
-    left_dict->values = (V_dict_val*) &left_dict->buff[left_dict->val_offset];
-    left_dict->variables->items = left_dict->variables->fixed;
-    left_dict->values->items = left_dict->values->fixed;
+    bdd_dictionary* left_dict = bdd_dictionary_relocate((bdd_dictionary*)left_dict_arr_bytes);
 
     jbyte* right_dict_arr_bytes = (*env)->GetByteArrayElements(env, right_dict_arr, NULL);
-    bdd_dictionary* right_dict = (bdd_dictionary*) right_dict_arr_bytes;
-    right_dict->variables = (V_dict_var*) &right_dict->buff[right_dict->var_offset];
-    right_dict->values = (V_dict_val*) &right_dict->buff[right_dict->val_offset];
-    right_dict->variables->items = right_dict->variables->fixed;
-    right_dict->values->items = right_dict->values->fixed;
+    bdd_dictionary* right_dict = bdd_dictionary_relocate((bdd_dictionary*)right_dict_arr_bytes);
 
     bdd_dictionary s_merged_dict;
     bdd_dictionary* merged_dict = NULL;
