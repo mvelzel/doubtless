@@ -1,7 +1,5 @@
 #include "com_doubtless_bdd_Native_00024.h"
 
-#include "test_config.h"
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

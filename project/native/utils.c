@@ -58,7 +58,7 @@ int pg_error(char** _errmsg, const char *fmt,...)
      * Create error message buffer. In postgres context this is palloc'd
      * so it it pfree()'d after the aborted transaction.
      */
-    *_errmsg = malloc(MAXERRMSG+2);
+    *_errmsg = MALLOC(MAXERRMSG+2);
     va_start(ap, fmt);
     vsnprintf(*_errmsg, MAXERRMSG, fmt, ap);
     strcat(*_errmsg,"\n");
@@ -175,7 +175,7 @@ pbuff* pbuff_init(pbuff* pbuff) {
 pbuff* pbuff_reset(pbuff* pbuff) {
     PBUFF_ASSERT(pbuff);
     if ( pbuff->buffer != pbuff->fast_buffer )
-        free(pbuff->buffer);
+        FREE(pbuff->buffer);
     return pbuff_init(pbuff);
 }
 
@@ -185,7 +185,7 @@ char* pbuff_preserve_or_alloc(pbuff* pbuff) {
         return pbuff->buffer; // preserve
     else {
         char* res;
-        if ( !(res = (char*)malloc(pbuff->size+1)) )
+        if ( !(res = (char*)MALLOC(pbuff->size+1)) )
                 return 0;
         memcpy(res,pbuff->fast_buffer,pbuff->size+1);
         return res;
@@ -196,7 +196,7 @@ void pbuff_free(pbuff* pbuff) {
     PBUFF_ASSERT(pbuff);
     pbuff->size = pbuff->capacity = -1;
     if ( pbuff->buffer != pbuff->fast_buffer )
-        free(pbuff->buffer);
+        FREE(pbuff->buffer);
     pbuff->buffer = NULL;
 }
 
@@ -242,11 +242,11 @@ int bprintf(pbuff* pbuff, const char *fmt,...)
         }
         pbuff->capacity *= 2;
         if ( pbuff->buffer == pbuff->fast_buffer )  {
-            if ( !(pbuff->buffer = (char*)malloc(pbuff->capacity)) )
+            if ( !(pbuff->buffer = (char*)MALLOC(pbuff->capacity)) )
                 return 0;
             memcpy(pbuff->buffer,pbuff->fast_buffer,pbuff->size+1);
         } else
-            pbuff->buffer = (char*)realloc(pbuff->buffer,pbuff->capacity);
+            pbuff->buffer = (char*)REALLOC(pbuff->buffer,pbuff->capacity);
         if ( !pbuff->buffer )
             return 0;
     }

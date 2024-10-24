@@ -97,11 +97,11 @@ static bdd_runtime* bdd_rt_init(bdd_runtime* bdd_rt, char* expr, int verbose, ch
 
 void bdd_rt_free(bdd_runtime* bdd_rt) {
     if ( bdd_rt->G_hash )
-        free(bdd_rt->G_hash);
+        FREE(bdd_rt->G_hash);
     if ( bdd_rt->e_stack )
-        free(bdd_rt->e_stack);
+        FREE(bdd_rt->e_stack);
     if ( bdd_rt->rva_epos )
-        free(bdd_rt->rva_epos);
+        FREE(bdd_rt->rva_epos);
     if ( bdd_rt->n >= 0 )
         V_rva_order_free(&bdd_rt->rva_order);
     V_rva_node_free(&bdd_rt->core.tree);
@@ -387,12 +387,12 @@ static int _compute_order(bdd_runtime* bctx, char* expr, char** _errmsg) {
 }
 
 static int compute_rva_order(bdd_runtime* bctx, char* bdd_expr, char** _errmsg) {
-    bctx->e_stack     = (char*)malloc(strlen(bdd_expr));
+    bctx->e_stack     = (char*)MALLOC(strlen(bdd_expr));
     bctx->e_stack_len = 0; /* during build len grows to determine framesize */
     bctx->n_rva   = count_rva(bdd_expr);
     V_rva_order_init_estsz(&bctx->rva_order,(bctx->n_rva<=128)?bctx->n_rva:128);
     bctx->c_rva   = 0;
-    bctx->rva_epos = (rva_epos*)malloc(bctx->n_rva*sizeof(rva_epos));;
+    bctx->rva_epos = (rva_epos*)MALLOC(bctx->n_rva*sizeof(rva_epos));;
     //
     if ( !_compute_order(bctx,bdd_expr,_errmsg) )
         return BDD_FAIL;
@@ -401,7 +401,7 @@ static int compute_rva_order(bdd_runtime* bctx, char* bdd_expr, char** _errmsg) 
     bctx->e_stack[bctx->e_stack_len++] = 0; // terminate the base frame with 0
     bctx->e_stack_framesz              = bctx->e_stack_len;
     bctx->e_stack_len = (bctx->n+1)*bctx->e_stack_framesz; // block 0 is base!
-    bctx->e_stack     = (char*)realloc(bctx->e_stack,bctx->e_stack_len);
+    bctx->e_stack     = (char*)REALLOC(bctx->e_stack,bctx->e_stack_len);
 #ifdef BDD_COUNT_RVA_INSTANTIATIONS
     for (int i=0; i<bctx->n; i++) {
         rva_order* rl = ORDER(bctx,i);
@@ -719,7 +719,7 @@ bdd* serialize_bdd(bdd* tbs) {
     V_rva_node_shrink2size(&tbs->tree);
     tree_size= V_rva_node_bytesize(&tbs->tree);
     bytesize = BDD_BASE_SIZE + tree_size;
-    if ( (res = (bdd*)malloc(bytesize)) ) {
+    if ( (res = (bdd*)MALLOC(bytesize)) ) {
         res->bytesize = bytesize;
         V_rva_node_serialize(&res->tree,&tbs->tree);
         return res;
@@ -745,7 +745,7 @@ static hash_matrix* create_G(nodei sz_l, nodei sz_r, char** _errmsg)  {
     nodei hash_sz = (sz_l+sz_r+WORD_MODULO - 1)/WORD_MODULO*WORD_MODULO;
     hash_matrix* res;
 
-    if ( !(res = malloc(HASH_MATRIX_SZ(hash_sz,hash_sz))) ) {
+    if ( !(res = MALLOC(HASH_MATRIX_SZ(hash_sz,hash_sz))) ) {
         pg_error(_errmsg,"create_G: alloc fails");
         return NULL;
     }
@@ -785,7 +785,7 @@ static hash_matrix* create_G(nodei sz_l, nodei sz_r, char** _errmsg)  {
 
 static hash_matrix* extend_G(hash_matrix *hm, char** _errmsg)  {
     hash_matrix* res;
-    if ( !(res = (hash_matrix*)realloc(hm, HASH_MATRIX_SZ(hm->hash_sz,2 * hm->max_hb))) ) {
+    if ( !(res = (hash_matrix*)REALLOC(hm, HASH_MATRIX_SZ(hm->hash_sz,2 * hm->max_hb))) ) {
         pg_error(_errmsg,"extend_G: alloc fails");
         return NULL;
     }
@@ -844,7 +844,7 @@ static hash_matrix* store_G(hash_matrix *hm, nodei l, nodei r, nodei val, char**
  *         if ( H_lookup_G(hm,i,j) != (i*j) )
  *             pg_fatal("UNEXPECTED");
  *     }
- *     free(hm);
+ *     FREE(hm);
  * }
  */
 
@@ -1179,7 +1179,7 @@ static double bdd_probability_node(bdd_dictionary* dict, bdd* bdd, nodei T, char
 
             pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
             bdd2string(pbuff,bdd,0);
-            str_rep = malloc(pbuff->size+1);
+            str_rep = MALLOC(pbuff->size+1);
             memcpy(str_rep, pbuff->buffer, pbuff->size+1);
             pbuff_free(pbuff);
             pg_error(_errmsg,"dictionary_lookup: rva[\'%s\'] not found in %s.",n_T->rva.var, str_rep);
@@ -1239,7 +1239,7 @@ static double bdd_probability_node(bdd_dictionary* dict, bdd* bdd, nodei T, char
 
        pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
        bdd2string(pbuff,bdd,0);
-       str_rep = malloc(pbuff->size+1);
+       str_rep = MALLOC(pbuff->size+1);
        memcpy(str_rep, pbuff->buffer, pbuff->size+1);
        pbuff_free(pbuff);
        pg_error(_errmsg,"probability_check: probvalue %f out of range: %s", p, str_rep);
