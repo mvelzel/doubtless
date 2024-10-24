@@ -1,4 +1,4 @@
-scalaVersion := "3.5.1"
+scalaVersion := "2.13.15"
 organization := "com.doubtless"
 
 javah / target := file("project/native")
@@ -6,7 +6,9 @@ javah / target := file("project/native")
 sbtJniCoreScope := Compile
 
 javaOptions ++= Seq(
-  "-Djava.library.path=" + baseDirectory.value.getAbsolutePath + "/project/native"
+  "-Djava.library.path=" + baseDirectory.value.getAbsolutePath + "/project/native",
+  "--add-exports",
+  "java.base/sun.nio.ch=ALL-UNNAMED"
 )
 
 coverageEnabled := true
@@ -20,12 +22,7 @@ lazy val root = (project in file ("."))
   .settings(
     inConfig(PerfTest)(Defaults.testSettings),
     libraryDependencies ++= Seq(
-      ("org.apache.spark" %% "spark-core" % "3.5.3")
-        .exclude("org.scala-lang.modules", "scala-xml_2.13")
-        .cross(CrossVersion.for3Use2_13),
-      ("org.apache.spark" %% "spark-sql" % "3.5.3")
-        .exclude("org.scala-lang.modules", "scala-xml_2.13")
-        .cross(CrossVersion.for3Use2_13),
+      "org.apache.spark" %% "spark-sql" % "3.5.3",
       "org.scalactic" %% "scalactic" % "3.2.19",
       "org.scalatest" %% "scalatest-funspec" % "3.2.19" % "test",
       "org.scalatest" %% "scalatest-funspec" % "3.2.19" % PerfTest

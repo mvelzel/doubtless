@@ -2,9 +2,10 @@ import org.scalatest.funspec.FixtureAnyFunSpec
 import com.doubtless.bdd._
 
 class BDDSpec extends FixtureAnyFunSpec {
-  type FixtureParam = (BDD, BDD, ProbDict)
+  case class FixtureParam(bdd1: BDD, bdd2: BDD, dict: ProbDict)
+
   override def withFixture(test: OneArgTest) = {
-    val fixture = (
+    val fixture = FixtureParam(
       BDD("(x=1&y=1)|(z=2)"),
       BDD("(x=2&z=1&y=2)"),
       ProbDict(
@@ -20,46 +21,45 @@ class BDDSpec extends FixtureAnyFunSpec {
   }
 
   describe("A BDD") {
-    it("should correctly instantiate") { (bdd1, bdd2, _) =>
-      assert(bdd1 == BDD("(x=1&y=1)|(z=2)"))
-      assert(bdd2 == BDD("(x=2&z=1&y=2)"))
+    it("should correctly instantiate") { fixture =>
+      assert(fixture.bdd1 == BDD("(x=1&y=1)|(z=2)"))
+      assert(fixture.bdd2 == BDD("(x=2&z=1&y=2)"))
     }
 
-    it("should provide the correct string representation") { (bdd1, bdd2, _) =>
-      assert(bdd1.toString() == "Bdd(((x=1&(y=1|z=2))|(!x=1&z=2)))")
-      assert(bdd2.toString() == "Bdd((x=2&(y=2&z=1)))")
+    it("should provide the correct string representation") { fixture =>
+        assert(fixture.bdd1.toString() == "Bdd(((x=1&(y=1|z=2))|(!x=1&z=2)))")
+        assert(fixture.bdd2.toString() == "Bdd((x=2&(y=2&z=1)))")
     }
 
     it("should throw a relevant error with an invalid expression") { _ =>
       assertThrows[IllegalArgumentException](BDD("bad argument"))
     }
 
-    it("should correctly invert with ~") { (bdd1, bdd2, _) =>
-      assert(~bdd1 == BDD("!((x=1&y=1)|(z=2))"))
-      assert(~bdd2 == BDD("!(x=2&z=1&y=2)"))
+    it("should correctly invert with ~") { fixture =>
+        assert(~fixture.bdd1 == BDD("!((x=1&y=1)|(z=2))"))
+        assert(~fixture.bdd2 == BDD("!(x=2&z=1&y=2)"))
     }
 
-    it("should correctly calculate probabilities with a dict") {
-      (bdd1, bdd2, dict) =>
-        assert(bdd1.probability(dict) == 0.942)
-        assert(bdd2.probability(dict) == 0.012)
+    it("should correctly calculate probabilities with a dict") { fixture =>
+        assert(fixture.bdd1.probability(fixture.dict) == 0.942)
+        assert(fixture.bdd2.probability(fixture.dict) == 0.012)
     }
 
     describe("with another BDD") {
-      it("should correctly determine equality") { (bdd1, bdd2, _) =>
-        assert(bdd1 == BDD("!(!(z=2)&!(x=1&y=1))"))
-        assert(bdd2 == BDD("!(!(!(!(x=2)|!(z=1)))|!(y=2))"))
+      it("should correctly determine equality") { fixture =>
+          assert(fixture.bdd1 == BDD("!(!(z=2)&!(x=1&y=1))"))
+          assert(fixture.bdd2 == BDD("!(!(!(!(x=2)|!(z=1)))|!(y=2))"))
 
-        assert(bdd1 != bdd2)
-        assert(bdd1 != null)
+          assert(fixture.bdd1 != fixture.bdd2)
+          assert(fixture.bdd1 != null)
       }
 
-      it("should correctly combine with |") { (bdd1, bdd2, _) =>
-        assert((bdd1 | bdd2) == BDD("(x=1&y=1)|(z=2)|(x=2&z=1&y=2)"))
+      it("should correctly combine with |") { fixture =>
+          assert((fixture.bdd1 | fixture.bdd2) == BDD("(x=1&y=1)|(z=2)|(x=2&z=1&y=2)"))
       }
 
-      it("should correctly combine with &") { (bdd1, bdd2, _) =>
-        assert((bdd1 & bdd2) == BDD("((x=1&y=1)|(z=2))&(x=2&z=1&y=2)"))
+      it("should correctly combine with &") { fixture =>
+          assert((fixture.bdd1 & fixture.bdd2) == BDD("((x=1&y=1)|(z=2))&(x=2&z=1&y=2)"))
       }
     }
   }

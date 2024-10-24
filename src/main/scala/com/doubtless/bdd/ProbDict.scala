@@ -91,7 +91,7 @@ class ProbDict private (
   // }
   override def concat[V2 >: Double](
       suffix: IterableOnce[(RandVar, V2)]
-  ): ProbDict = ProbDict(super.concat(suffix).toSeq*)
+  ): ProbDict = ProbDict(super.concat(suffix).toSeq:_*)
 }
 
 object ProbDict {
