@@ -13,7 +13,7 @@ class ProbDictSpec extends FixtureAnyFunSpec {
       RandVar("x", 2) -> 0.4,
       RandVar("z", 1) -> 0.1,
       RandVar("z", 2) -> 0.9
-    );
+    )
     test(dict)
   }
 
@@ -95,6 +95,30 @@ class ProbDictSpec extends FixtureAnyFunSpec {
     }
 
     describe("with another ProbDict") {
+      it("should correctly determine equality") { dict =>
+        val equalDict = ProbDict(
+          RandVar("y", 2) -> 0.6,
+          RandVar("y", 1) -> 1.4,
+          RandVar("x", 2) -> 0.4,
+          RandVar("z", 1) -> 0.1,
+          RandVar("x", 1) -> 0.6,
+          RandVar("z", 2) -> 0.9
+        )
+
+        assert(equalDict == dict)
+
+        val unequalDict = ProbDict(
+          RandVar("x", 1) -> 0.65,
+          RandVar("y", 1) -> 1.4,
+          RandVar("y", 2) -> 0.6,
+          RandVar("x", 2) -> 0.4,
+          RandVar("z", 1) -> 0.1,
+          RandVar("z", 2) -> 0.9
+        )
+
+        assert(unequalDict != dict)
+      }
+
       it(
         "should correctly merge and normalise their variables and probabilities"
       ) { dict =>
