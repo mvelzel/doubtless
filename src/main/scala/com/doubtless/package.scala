@@ -23,9 +23,11 @@ package object spark {
         .appName(appName)
         .getOrCreate()
     }
+    spark.sparkContext.setLogLevel("WARN")
 
     spark.udf.register("BDDAggOr", functions.udaf(BDDAggOrUDAF))
     spark.udf.register("BDDAggAnd", functions.udaf(BDDAggAndUDAF))
+    spark.udf.register("ProbCount", functions.udaf(ProbCountUDAF))
 
     spark
   }

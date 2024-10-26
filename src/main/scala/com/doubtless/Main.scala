@@ -44,4 +44,54 @@ object Main extends App {
       expr("BDDAggAnd(bdd)").as("AndAgg")
     )
     .show()
+
+  val testCount = Seq(
+    Test(1, BDD("x=1"), 1),
+    Test(2, BDD("x=2"), 1),
+    Test(3, BDD("x=1&y=1"), 2),
+    Test(4, BDD("x=2&y=2"), 2),
+    Test(5, BDD("y=1|z=1&!x=4"), 2),
+    Test(5, BDD("y=1|z=1&!x=4"), 2),
+    Test(5, BDD("y=1|z=1&!x=4"), 2),
+    Test(6, BDD("w=2&z=4"), 2),
+    Test(6, BDD("w=2&z=4"), 2),
+    Test(6, BDD("w=2&z=4"), 2),
+    Test(6, BDD("w=2&z=4"), 2),
+    Test(7, BDD("w=3"), 2),
+    Test(8, BDD("z=1"), 2),
+    Test(9, BDD("x=3"), 2),
+    Test(9, BDD("x=3"), 2),
+    Test(9, BDD("x=3"), 2),
+    Test(10, BDD("y=1"), 2),
+    Test(11, BDD("y=2"), 2),
+    Test(12, BDD("y=4"), 2),
+    Test(13, BDD("y=1"), 2),
+    Test(14, BDD("y=1&x=2|y=2"), 2),
+    Test(14, BDD("y=1&x=2|y=2"), 2),
+    Test(14, BDD("y=1&x=2|y=2"), 2),
+    Test(14, BDD("y=1&x=2|y=2"), 2),
+    Test(15, BDD("y=1"), 2),
+    Test(16, BDD("y=1&z=1"), 2),
+    Test(16, BDD("y=1&z=1"), 2),
+    Test(16, BDD("y=1&z=1"), 2),
+    Test(16, BDD("y=1&z=1"), 2),
+    Test(17, BDD("y=3"), 2),
+    Test(18, BDD("y=2"), 2),
+    Test(19, BDD("z=1"), 2)
+  )
+
+  val t0 = System.currentTimeMillis()
+
+  testCount.toDF
+    .groupBy("group")
+    .agg(expr("ProbCount(bdd)").as("count"))
+    .select(
+      col("group"),
+      explode(col("count"))
+    )
+    .show(40)
+
+  val t1 = System.currentTimeMillis()
+
+  println(s"Elapsed time: ${t1 - t0}ms")
 }
