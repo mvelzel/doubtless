@@ -113,7 +113,7 @@ object Main extends App {
     Test(9, BDD("x=3"), 2),
     Test(9, BDD("x=3"), 2),
     Test(9, BDD("x=3"), 2),
-    Test(9, BDD("x=3"), 2),
+    Test(10, BDD("x=3"), 2),
     Test(12, BDD("y=4"), 2),
     Test(13, BDD("y=1"), 2),
     Test(13, BDD("y=1"), 2),

@@ -4,7 +4,7 @@ import com.doubtless.spark.BDDUDT
 import org.apache.spark.sql.types.SQLUserDefinedType
 
 @SQLUserDefinedType(udt = classOf[BDDUDT])
-class BDD(val buffer: Array[Byte]) {
+class BDD(val buffer: Array[Byte]) extends Serializable {
   def |(that: BDD) = new BDD(
     Native.bddOperator("|", buffer, that.buffer)
   )
