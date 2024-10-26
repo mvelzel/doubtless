@@ -28,6 +28,7 @@ package object spark {
     spark.udf.register("BDDAggOr", functions.udaf(BDDAggOrUDAF))
     spark.udf.register("BDDAggAnd", functions.udaf(BDDAggAndUDAF))
     spark.udf.register("ProbCount", functions.udaf(ProbCountUDAF))
+    spark.udf.register("ProbSum", functions.udaf(ProbSumUDAF))
 
     spark
   }

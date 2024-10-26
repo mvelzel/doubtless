@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.Encoder
 
 object BDDAggAndUDAF extends Aggregator[BDD, BDD, BDD] {
-  def zero: BDD = BDD("1")
+  def zero: BDD = BDD.True
 
   def reduce(b: BDD, a: BDD): BDD = a & b
 

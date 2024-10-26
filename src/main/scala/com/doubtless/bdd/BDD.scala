@@ -25,4 +25,7 @@ class BDD(val buffer: Array[Byte]) {
 
 object BDD {
   def apply(expr: String) = new BDD(Native.createBdd(expr))
+
+  val False = BDD("0")
+  val True = BDD("1")
 }

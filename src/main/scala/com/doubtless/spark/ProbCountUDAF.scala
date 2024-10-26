@@ -6,11 +6,11 @@ import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.Encoder
 
 object ProbCountUDAF extends Aggregator[BDD, Map[Int, BDD], Map[Int, BDD]] {
-  def zero: Map[Int, BDD] = Map[Int, BDD]((0 -> BDD("1")))
+  def zero: Map[Int, BDD] = Map[Int, BDD]((0 -> BDD.True))
 
   override def reduce(b: Map[Int, BDD], a: BDD): Map[Int, BDD] =
     (b.map({ case (count, bdd) =>
-      (count + 1 -> ((bdd & a) | (b getOrElse (count + 1, BDD("0")))))
+      ((count + 1) -> ((bdd & a) | ((b getOrElse (count + 1, BDD.False)) & ~a)))
     }) + (0 -> (b(0) & (~a))))
 
   override def merge(
@@ -25,15 +25,14 @@ object ProbCountUDAF extends Aggregator[BDD, Map[Int, BDD], Map[Int, BDD]] {
       (count ->
         (0 to count)
           .map(i =>
-            (b1 getOrElse (count - i, BDD("0"))) & (b2 getOrElse (i, BDD(
-              "0"
-            )))
+            (b1 getOrElse (count - i, BDD.False)) & (b2 getOrElse (i, BDD.False))
           )
           .reduce((bdd1: BDD, bdd2: BDD) => bdd1 | bdd2))
     }: _*)
   }
 
-  override def finish(reduction: Map[Int, BDD]): Map[Int, BDD] = reduction
+  override def finish(reduction: Map[Int, BDD]): Map[Int, BDD] =
+    reduction.filter({ case (_, bdd) => bdd != BDD.False })
 
   def bufferEncoder: Encoder[Map[Int, BDD]] = ExpressionEncoder()
 
