@@ -1,9 +1,9 @@
 package com.doubtless.bdd
 
-import com.doubtless.spark.BDDUserDefinedType
+import com.doubtless.spark.BDDUDT
 import org.apache.spark.sql.types.SQLUserDefinedType
 
-@SQLUserDefinedType(udt = classOf[BDDUserDefinedType])
+@SQLUserDefinedType(udt = classOf[BDDUDT])
 class BDD(val buffer: Array[Byte]) {
   def |(that: BDD) = new BDD(
     Native.bddOperator("|", buffer, that.buffer)

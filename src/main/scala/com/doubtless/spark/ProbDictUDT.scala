@@ -3,7 +3,7 @@ package com.doubtless.spark
 import com.doubtless.bdd._
 import org.apache.spark.sql.types.{UserDefinedType, DataType, BinaryType}
 
-class ProbDictUserDefinedType extends UserDefinedType[ProbDict] {
+class ProbDictUDT extends UserDefinedType[ProbDict] {
   override def userClass: Class[ProbDict] = classOf[ProbDict]
 
   override def deserialize(datum: Any): ProbDict = datum match {

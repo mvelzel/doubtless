@@ -1,10 +1,12 @@
 package com.doubtless
 
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions
+import com.doubtless.spark._
 
 package object spark {
   def createSparkSession(appName: String, isLocal: Boolean): SparkSession = {
-    if (isLocal) {
+    val spark = if (isLocal) {
       SparkSession
         .builder()
         .config("spark.sql.caseSensitive", value = true)
@@ -21,5 +23,10 @@ package object spark {
         .appName(appName)
         .getOrCreate()
     }
+
+    spark.udf.register("BDDAggOr", functions.udaf(BDDAggOrUDAF))
+    spark.udf.register("BDDAggAnd", functions.udaf(BDDAggAndUDAF))
+
+    spark
   }
 }

@@ -2,8 +2,9 @@ package com.doubtless.spark
 
 import com.doubtless.bdd._
 import org.apache.spark.sql.types.{UserDefinedType, DataType, BinaryType}
+import org.apache.spark.sql.Encoder
 
-class BDDUserDefinedType extends UserDefinedType[BDD] {
+class BDDUDT extends UserDefinedType[BDD] {
   override def userClass: Class[BDD] = classOf[BDD]
 
   override def deserialize(datum: Any): BDD = datum match {

@@ -7,17 +7,17 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.SparkSession
 
 object Main extends App {
-  case class Test(id: Int, bdd: BDD)
+  case class Test(id: Int, bdd: BDD, group: Int)
 
   val spark = createSparkSession("Spark test", isLocal = true)
   import spark.implicits._
 
   val test = Seq(
-    Test(1, BDD("x=1")),
-    Test(2, BDD("x=2")),
-    Test(3, BDD("x=1&y=1")),
-    Test(4, BDD("x=2&y=2")),
-    Test(5, BDD("y=1"))
+    Test(1, BDD("x=1"), 1),
+    Test(2, BDD("x=2"), 1),
+    Test(3, BDD("x=1&y=1"), 2),
+    Test(4, BDD("x=2&y=2"), 2),
+    Test(5, BDD("y=1"), 2)
   )
 
   val testDF = test.toDF
@@ -36,4 +36,12 @@ object Main extends App {
   val test2DF = test2.toDF
 
   test2DF.show()
+
+  testDF
+    .groupBy("group")
+    .agg(
+      expr("BDDAggOr(bdd)").as("OrAgg"),
+      expr("BDDAggAnd(bdd)").as("AndAgg")
+    )
+    .show()
 }

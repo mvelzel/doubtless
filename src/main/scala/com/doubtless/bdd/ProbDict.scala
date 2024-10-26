@@ -1,6 +1,6 @@
 package com.doubtless.bdd
 
-import com.doubtless.spark.ProbDictUserDefinedType
+import com.doubtless.spark.ProbDictUDT
 import org.apache.spark.sql.types.SQLUserDefinedType
 
 case class RandVar(name: String, value: Int) {
@@ -38,7 +38,7 @@ object RandVar {
   }
 }
 
-@SQLUserDefinedType(udt = classOf[ProbDictUserDefinedType])
+@SQLUserDefinedType(udt = classOf[ProbDictUDT])
 class ProbDict private (
     val buffer: Array[Byte],
     private val varKeys: Set[RandVar]
