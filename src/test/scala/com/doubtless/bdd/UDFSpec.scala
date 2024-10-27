@@ -18,6 +18,7 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
       .getOrCreate()
 
     spark.udf.register("ProbCount", functions.udaf(ProbCountUDAF))
+    spark.udf.register("ProbSum", functions.udaf(ProbSumUDAF))
 
     try test(spark)
     finally {
@@ -25,8 +26,59 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
     }
   }
 
+  describe("The ProbSum UDAF") {
+    it("should correctly sum a value for all possible worlds") { spark =>
+      import spark.implicits._
+
+      val inputDF = Seq(
+        (1, 1, BDD("x=1")),
+        (1, -1, BDD("y=2")),
+        (1, 2, BDD("z=3")),
+        (1, 3, BDD("a=4"))
+      ).toDF("group", "num", "sentence")
+
+      val expectedDF = Seq(
+        (1, BDD("y=2&!x=1&!z=3&!a=4"), -1.0),
+        (1, BDD("(!x=1&!y=2&!z=3&!a=4)|(x=1&y=2&!z=3&!a=4)"), 0.0),
+        (1, BDD("(x=1&!y=2&!z=3&!a=4)|(z=3&y=2&!x=1&!a=4)"), 1.0),
+        (
+          1,
+          BDD("(z=3&!a=4&!y=2&!x=1)|(a=4&y=2&!z=3&!x=1)|(x=1&y=2&z=3&!a=4)"),
+          2.0
+        ),
+        (
+          1,
+          BDD("(a=4&!z=3&!y=2&!x=1)|(a=4&y=2&x=1&!z=3)|(z=3&x=1&!y=2&!a=4)"),
+          3.0
+        ),
+        (1, BDD("(a=4&x=1&!y=2&!z=3)|(a=4&z=3&y=2&!x=1)"), 4.0),
+        (1, BDD("(a=4&z=3&!x=1&!y=2)|(a=4&z=3&y=2&x=1)"), 5.0),
+        (1, BDD("x=1&z=3&a=4&!y=2"), 6.0)
+      ).toDF("group", "sentence", "total")
+      .orderBy(asc("total"))
+
+      val actualDF = inputDF
+        .groupBy("group")
+        .agg(expr("ProbSum(num,sentence)").as("total"))
+        .select(
+          col("group"),
+          explode(col("total"))
+        )
+        .withColumnsRenamed(
+          Map(
+            "key" -> "total",
+            "value" -> "sentence"
+          )
+        )
+        .select("group", "sentence", "total")
+        .orderBy(asc("total"))
+
+      assertSmallDatasetEquality(actualDF, expectedDF)
+    }
+  }
+
   describe("The ProbCount UDAF") {
-    it("should correctly count over all possible worlds") { spark =>
+    it("should correctly count for all possible worlds") { spark =>
       import spark.implicits._
 
       val inputDF = Seq(
@@ -52,10 +104,10 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
 
       val actualDF = inputDF
         .groupBy("group")
-        .agg(expr("ProbCount(sentence)").as("sum"))
+        .agg(expr("ProbCount(sentence)").as("count"))
         .select(
           col("group"),
-          explode(col("sum"))
+          explode(col("count"))
         )
         .withColumnsRenamed(
           Map(
@@ -68,7 +120,7 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
       assertSmallDatasetEquality(actualDF, expectedDF)
     }
 
-  it("should correctly leave out impossible worlds") { spark =>
+    it("should correctly leave out impossible worlds") { spark =>
       import spark.implicits._
 
       val inputDF = Seq(
@@ -83,15 +135,15 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
         (1, BDD("!x=1&!x=2&!x=3"), 0),
         (1, BDD("x=1|x=2|x=3"), 1),
         (2, BDD("!y=1&!y=2"), 0),
-        (2, BDD("y=1|y=2"), 1),
+        (2, BDD("y=1|y=2"), 1)
       ).toDF("group", "sentence", "count")
 
       val actualDF = inputDF
         .groupBy("group")
-        .agg(expr("ProbCount(sentence)").as("sum"))
+        .agg(expr("ProbCount(sentence)").as("count"))
         .select(
           col("group"),
-          explode(col("sum"))
+          explode(col("count"))
         )
         .withColumnsRenamed(
           Map(
