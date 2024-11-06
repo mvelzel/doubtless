@@ -34,7 +34,18 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
         (1, 1, BDD("x=1")),
         (1, -1, BDD("y=2")),
         (1, 2, BDD("z=3")),
-        (1, 3, BDD("a=4"))
+        (1, 3, BDD("a=4")),
+        (2, 1, BDD("x=1")),
+        (2, 2, BDD("x=1")),
+        (2, 3, BDD("x=1")),
+        (2, -1, BDD("x=1")),
+        (2, -2, BDD("x=1")),
+        (2, 2, BDD("x=1")),
+        (2, 3, BDD("x=1")),
+        (2, 4, BDD("x=2")),
+        (2, 1, BDD("x=2")),
+        (2, 2, BDD("x=2")),
+        (2, 2, BDD("x=2"))
       ).toDF("group", "num", "sentence")
 
       val expectedDF = Seq(
@@ -53,9 +64,12 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
         ),
         (1, BDD("(a=4&x=1&!y=2&!z=3)|(a=4&z=3&y=2&!x=1)"), 4.0),
         (1, BDD("(a=4&z=3&!x=1&!y=2)|(a=4&z=3&y=2&x=1)"), 5.0),
-        (1, BDD("x=1&z=3&a=4&!y=2"), 6.0)
+        (1, BDD("x=1&z=3&a=4&!y=2"), 6.0),
+        (2, BDD("!x=1&!x=2"), 0.0),
+        (2, BDD("x=1"), 8.0),
+        (2, BDD("x=2"), 9.0)
       ).toDF("group", "sentence", "total")
-      .orderBy(asc("total"))
+        .orderBy(asc("group"), asc("total"))
 
       val actualDF = inputDF
         .groupBy("group")
@@ -71,7 +85,7 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
           )
         )
         .select("group", "sentence", "total")
-        .orderBy(asc("total"))
+        .orderBy(asc("group"), asc("total"))
 
       assertSmallDatasetEquality(actualDF, expectedDF)
     }

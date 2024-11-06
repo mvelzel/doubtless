@@ -45,7 +45,7 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_bdd2string
 
     bdd* bdd_struct = relocate_bdd((bdd*)bytes);
 
-    bdd2string(pbuff, bdd_struct, 1);
+    bdd2string(pbuff, bdd_struct, 0);
     jstring res = (*env)->NewStringUTF(env, pbuff->buffer);
     pbuff_free(pbuff);
 

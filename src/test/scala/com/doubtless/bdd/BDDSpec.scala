@@ -27,8 +27,8 @@ class BDDSpec extends FixtureAnyFunSpec {
     }
 
     it("should provide the correct string representation") { fixture =>
-        assert(fixture.bdd1.toString() == "Bdd(((x=1&(y=1|z=2))|(!x=1&z=2)))")
-        assert(fixture.bdd2.toString() == "Bdd((x=2&(y=2&z=1)))")
+        assert(fixture.bdd1.toString() == "BDD(((x=1&(y=1|z=2))|(!x=1&z=2)))")
+        assert(fixture.bdd2.toString() == "BDD((x=2&(y=2&z=1)))")
     }
 
     it("should throw a relevant error with an invalid expression") { _ =>
@@ -49,6 +49,9 @@ class BDDSpec extends FixtureAnyFunSpec {
       it("should correctly determine equality") { fixture =>
           assert(fixture.bdd1 == BDD("!(!(z=2)&!(x=1&y=1))"))
           assert(fixture.bdd2 == BDD("!(!(!(!(x=2)|!(z=1)))|!(y=2))"))
+          assert(BDD("(x=2&!x=1)|(0&x=2)") == BDD("(x=2)|(0&(x=2&!x=1))"))
+          assert(BDD("x=2&!x=1") == BDD("x=2"))
+          assert(BDD("x=2") == BDD("x=2&!x=1"))
 
           assert(fixture.bdd1 != fixture.bdd2)
           assert(fixture.bdd1 != null)

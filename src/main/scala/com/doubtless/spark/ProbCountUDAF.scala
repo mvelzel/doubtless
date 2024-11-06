@@ -10,6 +10,7 @@ object ProbCountUDAF extends Aggregator[BDD, Map[Int, BDD], Map[Int, BDD]] {
 
   override def reduce(b: Map[Int, BDD], a: BDD): Map[Int, BDD] =
     (b.map({ case (count, bdd) =>
+      // TODO Replace this getOrElse with a normal branching statement
       ((count + 1) -> ((bdd & a) | ((b getOrElse (count + 1, BDD.False)) & ~a)))
     }) + (0 -> (b(0) & (~a))))
 
@@ -25,6 +26,7 @@ object ProbCountUDAF extends Aggregator[BDD, Map[Int, BDD], Map[Int, BDD]] {
       (count ->
         (0 to count)
           .map(i =>
+            // TODO Replace this getOrElse with a normal branching statement
             (b1 getOrElse (count - i, BDD.False)) & (b2 getOrElse (i, BDD.False))
           )
           .reduce((bdd1: BDD, bdd2: BDD) => bdd1 | bdd2))
