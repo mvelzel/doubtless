@@ -101,8 +101,8 @@ class UDFPerf extends FixtureAnyFunSpec {
         BDD("(x=1&x=2|x=3&x=4|x=5&x=6|x=7&x=8|y=4)")
       )
 
-      val n_groups = 4
-      val group_size = 100
+      val n_groups = 1
+      val group_size = 1000
 
       val rows = 1 to n_groups flatMap { group =>
         1 to group_size map { _ => (group, bdds(Random.nextInt(bdds.size))) }
