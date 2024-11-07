@@ -1,5 +1,5 @@
 import org.scalatest.funspec.FixtureAnyFunSpec
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.stl.SparkSession
 import com.doubtless.spark.createSparkSession
 import com.doubtless.bdd.BDD
 import org.apache.spark.sql.functions._
