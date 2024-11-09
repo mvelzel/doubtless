@@ -3,7 +3,7 @@ organization := "com.doubtless"
 
 javah / target := file("project/native")
 
-sbtJniCoreScope := Compile
+sbtJniCoreScope := Provided
 
 javaOptions ++= Seq(
   "-Djava.library.path=" + baseDirectory.value.getAbsolutePath + "/project/native",
@@ -32,3 +32,4 @@ lazy val root = (project in file ("."))
       "org.scalatest" %% "scalatest-funspec" % "3.2.19" % PerfTest
     )
   )
+  .disablePlugins(ScoverageSbtPlugin)

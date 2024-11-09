@@ -24,9 +24,13 @@ class BDD(val buffer: Array[Byte]) extends Serializable {
       // This ugly workaround is needed because BDDs with mismatching variables break the equivalence check.
       // Example: x=2 and x=2&!x=1 without the workaround returns false.
       // TODO Make a GitHub issue for this
-      val newLeft = BDD(s"(${this.toExpr()})|(0&(${b.toExpr}))")
-      val newRight = BDD(s"(${b.toExpr()})|(0&(${this.toExpr}))")
-      Native.bddEquiv(newLeft.buffer, newRight.buffer)
+      if (!Native.bddEquiv(this.buffer, b.buffer)) {
+        val newLeft = BDD(s"(${this.toExpr()})|(0&(${b.toExpr}))")
+        val newRight = BDD(s"(${b.toExpr()})|(0&(${this.toExpr}))")
+        Native.bddEquiv(newLeft.buffer, newRight.buffer)
+      } else {
+        true
+      }
     case _ => false
   }
 }

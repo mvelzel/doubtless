@@ -9,7 +9,7 @@ import org.apache.spark.sql.SparkSession
 object Main extends App {
   case class Test(id: Int, bdd: BDD, group: Int)
 
-  val spark = createSparkSession("Spark test", isLocal = true)
+  val spark = createSparkSession("SparkTest", isLocal = true)
   import spark.implicits._
 
   val test = Seq(
