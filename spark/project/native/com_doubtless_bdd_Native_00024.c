@@ -153,6 +153,23 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEquiv
     return equal;
 }
 
+JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_bddGenerateDot
+(JNIEnv* env, jobject obj, jbyteArray bdd_arr) {
+    pbuff pbuff_struct, *pbuff=pbuff_init(&pbuff_struct);
+
+    jbyte* bytes = (*env)->GetByteArrayElements(env, bdd_arr, NULL);
+
+    bdd* bdd_struct = relocate_bdd((bdd*)bytes);
+
+    bdd_generate_dot(bdd_struct, pbuff, NULL);
+    jstring res = (*env)->NewStringUTF(env, pbuff->buffer);
+    pbuff_free(pbuff);
+
+    (*env)->ReleaseByteArrayElements(env, bdd_arr, bytes, JNI_ABORT);
+
+    return res;
+}
+
 JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_createDict
 (JNIEnv* env, jobject obj, jstring vardefs) {
     bdd_dictionary new_dict_struct, *dict;

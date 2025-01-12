@@ -17,6 +17,8 @@ class BDD(val buffer: Array[Byte]) extends Serializable {
 
   def toExpr(): String = Native.bdd2string(buffer)
 
+  def toDot(): String = Native.bddGenerateDot(buffer)
+
   override def toString(): String = s"BDD(${this.toExpr()})"
 
   override def equals(bdd: Any) = bdd match {
