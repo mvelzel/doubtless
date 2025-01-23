@@ -25,7 +25,9 @@ lazy val root = (project in file ("."))
   .settings(
     inConfig(PerfTest)(Defaults.testSettings),
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-sql" % "3.5.3",
+      "org.apache.spark" %% "spark-sql" % "3.5.4",
+      "org.apache.spark" %% "spark-hive" % "3.5.4",
+      "org.apache.spark" %% "spark-hive-thriftserver" % "3.5.4",
       "com.github.mrpowers" %% "spark-fast-tests" % "1.1.0" % "test",
       "org.scalactic" %% "scalactic" % "3.2.19",
       "org.scalatest" %% "scalatest-funspec" % "3.2.19" % "test",

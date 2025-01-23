@@ -11,3 +11,8 @@ sbt
 start-master.sh -h 172.21.114.37
 start-worker.sh spark://172.21.114.37:7077
 spark-submit --class com.doubtless.Main --master spark://172.21.114.37:7077 target/scala-2.13/root_2.13-0.1.0-SNAPSHOT.jar
+
+https://stackoverflow.com/questions/21106548/how-to-use-jni-in-spark
+-- spark-defaults.conf
+spark.driver.extraLibraryPath   /home/mvelzel/scala_native/spark/project/native
+spark.executor.extraLibraryPath /home/mvelzel/scala_native/spark/project/native
