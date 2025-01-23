@@ -1,0 +1,1 @@
+create or replace function bdd_not as 'com.doubtless.spark.hive.HiveBDDNot';
