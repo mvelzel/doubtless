@@ -31,6 +31,7 @@ on-run-start:
   - '{{ create_bdd_agg_and_udaf() }}'
   - '{{ create_bdd_agg_or_udaf() }}'
   - '{{ create_prob_count_udaf() }}'
+  - '{{ create_prob_sum_udaf() }}'
 
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
