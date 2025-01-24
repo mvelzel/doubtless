@@ -7,10 +7,10 @@ import org.apache.hadoop.io.BytesWritable
 class HiveBDDAggOrUDAF extends UDAF { }
 object HiveBDDAggOrUDAF {
   class HiveBDDAggOrEvaluator extends UDAFEvaluator {
-    var bdd: BDD = BDD("0")
+    var bdd: BDD = BDD.False
 
     override def init() = {
-      this.bdd = BDD("0")
+      this.bdd = BDD.False
     }
 
     def iterate(bytes: BytesWritable) = {
@@ -18,7 +18,7 @@ object HiveBDDAggOrUDAF {
       true
     }
 
-    def terminatePartial() = new BytesWritable(this.bdd.buffer)
+    def terminatePartial() = terminate()
 
     def merge(bytes: BytesWritable) = {
       this.bdd = this.bdd | (new BDD(bytes.getBytes()))

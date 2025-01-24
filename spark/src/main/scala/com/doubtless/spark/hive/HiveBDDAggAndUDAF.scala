@@ -28,10 +28,10 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo
 class HiveBDDAggAndUDAF extends UDAF { }
 object HiveBDDAggAndUDAF {
   class HiveBDDAggAndEvaluator extends UDAFEvaluator {
-    var bdd: BDD = BDD("1")
+    var bdd: BDD = BDD.True
 
     override def init() = {
-      this.bdd = BDD("1")
+      this.bdd = BDD.True
     }
 
     def iterate(bytes: BytesWritable) = {
@@ -39,7 +39,7 @@ object HiveBDDAggAndUDAF {
       true
     }
 
-    def terminatePartial() = new BytesWritable(this.bdd.buffer)
+    def terminatePartial() = terminate()
 
     def merge(bytes: BytesWritable) = {
       this.bdd = this.bdd & (new BDD(bytes.getBytes()))
