@@ -1,1 +1,0 @@
-create or replace function bdd_to_string as 'com.doubtless.spark.hive.HiveBDDToString';

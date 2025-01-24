@@ -1,1 +1,0 @@
-create or replace function bdd_or as 'com.doubtless.spark.hive.HiveBDDOr';
