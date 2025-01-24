@@ -3,4 +3,4 @@
 
 select *
 from {{ ref('my_first_dbt_model') }}
-where id = 1
+where bdd_to_string(bdd) = 'BDD(x=1)'

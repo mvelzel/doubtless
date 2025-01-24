@@ -11,9 +11,9 @@
 
 with source_data as (
 
-    select 1 as id
+    select bdd('x=1') as bdd, 1 as group
     union all
-    select null as id
+    select bdd('y=1') as bdd, 1 as group
 
 )
 
