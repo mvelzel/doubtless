@@ -23,6 +23,7 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "dbt_packages"
 
 on-run-start:
+  # Create all UDFs
   - '{{ create_bdd_udf() }}'
   - '{{ create_bdd_to_string_udf() }}'
   - '{{ create_bdd_and_udf() }}'
@@ -32,6 +33,9 @@ on-run-start:
   - '{{ create_bdd_agg_or_udaf() }}'
   - '{{ create_prob_count_udaf() }}'
   - '{{ create_prob_sum_udaf() }}'
+  # Ingest the raw data
+  - '{{ create_raw_schema() }}'
+  - '{{ ingest_wdc_data() }}'
 
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
