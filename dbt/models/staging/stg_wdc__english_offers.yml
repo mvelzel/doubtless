@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: stg_wdc__english_offers
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - url
+            - nodeID
+    columns:
+      - name: cluster_id
+        data_tests:
+          - not_null
+      - name: identifiers
+      - name: nodeID
+        data_tests:
+          - not_null
+      - name: parent_NodeID
+        data_tests:
+          - not_null
+      - name: parent_schema.org_properties
+      - name: relationToParent
+        data_tests:
+          - not_null
+      - name: schema.org_properties
+      - name: url
+        data_tests:
+          - not_null

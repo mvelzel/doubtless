@@ -45,6 +45,9 @@ on-run-start:
 # files using the `{{ config(...) }}` macro.
 models:
   doubtless:
-    # Config indicated by + and applies to all files under models/example/
-    example:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
       +materialized: view
