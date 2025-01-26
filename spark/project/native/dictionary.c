@@ -155,7 +155,7 @@ void bdd_dictionary_print(bdd_dictionary* dict, int all, pbuff* pbuff) {
         bprintf(pbuff,"# values[size/cap]   = [%d/%d]\n",dict->values->size,dict->values->capacity);
         bprintf(pbuff,"# bytesize=%d\n",dict->bytesize);
         bprintf(pbuff,"# sorted=%d\n",dict->var_sorted);
-        bprintf(pbuff,"# val_deleted=%d\n",dict->val_deleted);
+        bprintf(pbuff,"# val_deleted=%lu\n",dict->val_deleted);
         bprintf(pbuff,"# serialized=%d\n",bdd_dictionary_is_serialized(dict));
     }
     if ( all ) {

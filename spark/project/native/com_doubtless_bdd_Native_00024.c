@@ -232,7 +232,7 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_dict2string
 
     bprintf(
         pbuff,
-        "[Dictionary(#vars=%d, #values=%d)]",
+        "[Dictionary(#vars=%d, #values=%lu)]",
         V_dict_var_size(dict->variables),
         V_dict_val_size(dict->values) - dict->val_deleted
     );

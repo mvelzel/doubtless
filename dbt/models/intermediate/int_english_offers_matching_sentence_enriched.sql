@@ -18,7 +18,7 @@ offers_cluster_name_counts as (
         property_name,
         count(*) as name_count,
         sum(count(*)) over (partition by cluster_id) as total_name_count,
-        row_number() over (partition by cluster_id order by property_name) as name_dedup_variable_alternative
+        row_number() over (partition by cluster_id order by property_name) as name_matching_variable_alternative
     from english_offers
     where property_name is not null
     group by cluster_id, property_name
@@ -33,7 +33,7 @@ offers_cluster_price_counts as (
         property_price,
         count(*) as price_count,
         sum(count(*)) over (partition by cluster_id) as total_price_count,
-        row_number() over (partition by cluster_id order by property_price) as price_dedup_variable_alternative
+        row_number() over (partition by cluster_id order by property_price) as price_matching_variable_alternative
     from english_offers
     where property_price is not null
     group by cluster_id, property_price
@@ -55,8 +55,8 @@ offers_with_bdds as (
 
     select
         offer.*,
-        concat('pn', cluster_variable_name.variable_name) as name_dedup_variable_name,
-        name_counts.name_dedup_variable_alternative,
+        concat('pn', cluster_variable_name.variable_name) as name_matching_variable_name,
+        name_counts.name_matching_variable_alternative,
         case coalesce(name_counts.name_count, -1)
             when -1 then bdd('0')
             when name_counts.total_name_count then bdd('1')
@@ -64,15 +64,15 @@ offers_with_bdds as (
                 'pn',
                 cluster_variable_name.variable_name,
                 '=',
-                name_counts.name_dedup_variable_alternative
+                name_counts.name_matching_variable_alternative
             ))
-        end as name_dedup_sentence,
+        end as name_matching_sentence,
         case when name_counts.cluster_id is not null
             then name_counts.name_count / name_counts.total_name_count
             else null
-        end as name_dedup_probability,
-        concat('pp', cluster_variable_name.variable_name) as price_dedup_variable_name,
-        price_counts.price_dedup_variable_alternative,
+        end as name_matching_probability,
+        concat('pp', cluster_variable_name.variable_name) as price_matching_variable_name,
+        price_counts.price_matching_variable_alternative,
         case coalesce(price_counts.price_count, -1)
             when -1 then bdd('0')
             when price_counts.total_price_count then bdd('1')
@@ -80,13 +80,13 @@ offers_with_bdds as (
                 'pp',
                 cluster_variable_name.variable_name,
                 '=',
-                price_counts.price_dedup_variable_alternative
+                price_counts.price_matching_variable_alternative
             ))
-        end as price_dedup_sentence,
+        end as price_matching_sentence,
         case when price_counts.cluster_id is not null
             then price_counts.price_count / price_counts.total_price_count
             else null
-        end as price_dedup_probability
+        end as price_matching_probability
     from english_offers as offer
     left join cluster_variable_names as cluster_variable_name
     on offer.cluster_id = cluster_variable_name.cluster_id

@@ -29,6 +29,8 @@ on-run-start:
   - '{{ create_bdd_and_udf() }}'
   - '{{ create_bdd_or_udf() }}'
   - '{{ create_bdd_not_udf() }}'
+  - '{{ create_prob_dict_udf() }}'
+  - '{{ create_prob_dict_to_string_udf() }}'
   - '{{ create_bdd_agg_and_udaf() }}'
   - '{{ create_bdd_agg_or_udaf() }}'
   - '{{ create_prob_count_udaf() }}'
@@ -51,3 +53,6 @@ models:
     intermediate:
       +schema: intermediate
       +materialized: view
+    experiments:
+      +schema: experiments
+      +materialized: table

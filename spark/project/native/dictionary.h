@@ -22,8 +22,8 @@
 #define MAX_RVA_NAME         (MAX_RVA_NAME_BUFF-1)        
 #define MAX_RVA_LEN          24
 
-typedef unsigned short       dindex;
-#define MAX_DINDEX           USHRT_MAX
+typedef unsigned long       dindex;
+#define MAX_DINDEX         ULONG_MAX
 
 typedef struct dict_var {
     char    name[MAX_RVA_NAME_BUFF];

@@ -111,4 +111,6 @@ object ProbDict {
         .mkString(";")
     )
   )
+
+  def apply(varDef: String) = new ProbDict(Native.createDict(varDef))
 }
