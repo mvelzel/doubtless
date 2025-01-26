@@ -6,5 +6,6 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "dbt-core>=1.9.1",
+    "dbt-postgres>=1.9.0",
     "dbt-spark[pyhive]>=1.9.0",
 ]

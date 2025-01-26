@@ -2,6 +2,6 @@ version: 2
 
 sources:
   - name: raw
-    database: raw
+    schema: raw
     tables:
       - name: raw_wdc

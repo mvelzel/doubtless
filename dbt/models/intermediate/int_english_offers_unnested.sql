@@ -7,11 +7,19 @@ with wdc_english_offers as (
 offers_exploded_properties as (
 
     select
-        url,
-        nodeID,
+        offer.url,
+        offer.nodeID,
+        {% if target.name == 'spark' -%}
         property
-    from wdc_english_offers
-    lateral view explode(`schema.org_properties`) as property
+        {% elif target.name == 'postgres' -%}
+        json.value as property
+        {% endif -%}
+    from wdc_english_offers as offer
+    {% if target.name == 'spark' -%}
+    lateral view explode(offer.`schema.org_properties`) as property
+    {% elif target.name == 'postgres' -%}
+    cross join jsonb_array_elements(offer."schema.org_properties") as json
+    {% endif -%}
 
 ),
 
@@ -20,15 +28,15 @@ offers_unnested_properties as (
     select
         url,
         nodeID,
-        max(property.`/availability`) as property_availability,
-        max(property.`/brand`) as property_brand,
-        max(property.`/description`) as property_description,
-        max(property.`/image`) as property_image,
-        max(property.`/manufacturer`) as property_manufacturer,
-        max(property.`/name`) as property_name,
-        max(property.`/price`) as property_price,
-        max(property.`/priceCurrency`) as property_price_currency,
-        max(property.`/title`) as property_title
+        max({{ get_from_struct('property', '/availability') }}) as property_availability,
+        max({{ get_from_struct('property', '/brand') }}) as property_brand,
+        max({{ get_from_struct('property', '/description') }}) as property_description,
+        max({{ get_from_struct('property', '/image') }}) as property_image,
+        max({{ get_from_struct('property', '/manufacturer') }}) as property_manufacturer,
+        max({{ get_from_struct('property', '/name') }}) as property_name,
+        max({{ get_from_struct('property', '/price') }}) as property_price,
+        max({{ get_from_struct('property', '/priceCurrency') }}) as property_price_currency,
+        max({{ get_from_struct('property', '/title') }}) as property_title
     from offers_exploded_properties
     group by url, nodeID
 
@@ -37,11 +45,19 @@ offers_unnested_properties as (
 offers_exploded_identifiers as (
 
     select
-        url,
-        nodeID,
+        offer.url,
+        offer.nodeID,
+        {% if target.name == 'spark' -%}
         identifier
-    from wdc_english_offers
-    lateral view explode(`identifiers`) as identifier
+        {% elif target.name == 'postgres' -%}
+        json.value as identifier
+        {% endif -%}
+    from wdc_english_offers as offer
+    {% if target.name == 'spark' -%}
+    lateral view explode(offer.`identifiers`) as identifier
+    {% elif target.name == 'postgres' -%}
+    cross join jsonb_array_elements(offer."identifiers") as json
+    {% endif -%}
 
 ),
 
@@ -50,14 +66,14 @@ offers_unnested_identifiers as (
     select
         url,
         nodeID,
-        max(identifier.`/gtin12`) as identifier_gtin12,
-        max(identifier.`/gtin13`) as identifier_gtin13,
-        max(identifier.`/gtin14`) as identifier_gtin14,
-        max(identifier.`/gtin8`) as identifier_gtin8,
-        max(identifier.`/identifier`) as identifier_identifier,
-        max(identifier.`/mpn`) as identifier_mpn,
-        max(identifier.`/productID`) as identifier_product_id,
-        max(identifier.`/sku`) as identifier_sku
+        max({{ get_from_struct('identifier', '/gtin12') }}) as identifier_gtin12,
+        max({{ get_from_struct('identifier', '/gtin13') }}) as identifier_gtin13,
+        max({{ get_from_struct('identifier', '/gtin14') }}) as identifier_gtin14,
+        max({{ get_from_struct('identifier', '/gtin8') }}) as identifier_gtin8,
+        max({{ get_from_struct('identifier', '/identifier') }}) as identifier_identifier,
+        max({{ get_from_struct('identifier', '/mpn') }}) as identifier_mpn,
+        max({{ get_from_struct('identifier', '/productID') }}) as identifier_product_id,
+        max({{ get_from_struct('identifier', '/sku') }}) as identifier_sku
     from offers_exploded_identifiers
     group by url, nodeID
 

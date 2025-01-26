@@ -56,7 +56,7 @@ combined_variables as (
 dictionary_definition as (
 
     select
-        concat_ws(';', collect_list(variable_definition)) as definition,
+        {{ string_agg('variable_definition', ';') }} as definition,
         count(*) as variable_definition_count
     from combined_variables
 
@@ -65,7 +65,7 @@ dictionary_definition as (
 dictionary as (
 
     select
-        prob_dict(definition) as dictionary,
+        dictionary(definition) as dictionary,
         variable_definition_count
     from dictionary_definition
 

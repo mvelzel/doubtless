@@ -1,7 +1,19 @@
 {% macro create_prob_dict_udf() %}
-    create or replace function prob_dict as 'com.doubtless.spark.hive.HiveProbDict';
+
+    {% if target.name == 'spark' %}
+        create or replace function dictionary as 'com.doubtless.spark.hive.HiveProbDict';
+    {% else %}
+        select 1;
+    {% endif %}
+
 {% endmacro %}
 
 {% macro create_prob_dict_to_string_udf() %}
-    create or replace function prob_dict_to_string as 'com.doubtless.spark.hive.HiveProbDictToString';
+
+    {% if target.name == 'spark' %}
+        create or replace function prob_dict_to_string as 'com.doubtless.spark.hive.HiveProbDictToString';
+    {% else %}
+        select 1;
+    {% endif %}
+
 {% endmacro %}

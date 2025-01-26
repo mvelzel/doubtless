@@ -13,7 +13,6 @@ with english_offers as (
 offers_cluster_name_counts as (
 
     select
-        --partition_id,
         cluster_id,
         property_name,
         count(*) as name_count,
@@ -28,7 +27,6 @@ offers_cluster_name_counts as (
 offers_cluster_price_counts as (
 
     select
-        --partition_id,
         cluster_id,
         property_price,
         count(*) as price_count,
@@ -43,7 +41,6 @@ offers_cluster_price_counts as (
 cluster_variable_names as (
 
     select
-        --partition_id,
         cluster_id,
         row_number() over (order by cluster_id) as variable_name
     from english_offers
@@ -90,15 +87,12 @@ offers_with_bdds as (
     from english_offers as offer
     left join cluster_variable_names as cluster_variable_name
     on offer.cluster_id = cluster_variable_name.cluster_id
-    --and offer.partition_id = cluster_variable_name.partition_id
     left join offers_cluster_name_counts as name_counts
     on offer.cluster_id = name_counts.cluster_id
-    --and offer.partition_id = name_counts.partition_id
     and offer.property_name = name_counts.property_name
     left join offers_cluster_price_counts as price_counts
     on offer.cluster_id = price_counts.cluster_id
     and offer.property_price = price_counts.property_price
-    --and offer.partition_id = price_counts.partition_id
 
 )
 
