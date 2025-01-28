@@ -52,9 +52,12 @@ models:
     staging:
       +schema: staging
       +materialized: view
+      +file_format: parquet
     intermediate:
       +schema: intermediate
       +materialized: view
+      +file_format: parquet
     experiments:
       +schema: experiments
       +materialized: table
+      +file_format: parquet
