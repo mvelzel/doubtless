@@ -2,7 +2,7 @@ package com.doubtless.spark.hive
 
 import org.apache.hadoop.hive.ql.exec.UDF
 import org.apache.hadoop.io.{Text, BytesWritable}
-import com.doubtless.bdd.BDD
+import com.doubtless.bdd.{BDD, ProbDict}
 
 class HiveBDD extends UDF {
   def evaluate(input: Text): Array[Byte] = {
@@ -47,5 +47,14 @@ class HiveBDDNot extends UDF {
 
     val bdd = new BDD(input.getBytes())
     (~bdd).buffer
+  }
+}
+
+class HiveBDDProb extends UDF {
+  def evaluate(probDictInput: BytesWritable, bddInput: BytesWritable): Double = {
+    val bdd = new BDD(bddInput.getBytes())
+    val probDict = new ProbDict(probDictInput.getBytes())
+
+    bdd.probability(probDict)
   }
 }
