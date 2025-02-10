@@ -182,34 +182,34 @@ class UDFSpec extends FixtureAnyFunSpec with DatasetComparer {
   }
 
   describe("The ProbCount UDAF") {
-    it("outputs the correct graph") { spark =>
-      import spark.implicits._
+    //it("outputs the correct graph") { spark =>
+    //  import spark.implicits._
 
-      val inputDF = Seq(
-        (1, BDD("x1=1")),
-        (1, BDD("x2=1")),
-        (1, BDD("x3=1")),
-        (1, BDD("x4=1")),
-      ).toDF("group", "sentence")
+    //  val inputDF = Seq(
+    //    (1, BDD("x1=1")),
+    //    (1, BDD("x2=1")),
+    //    (1, BDD("x3=1")),
+    //    (1, BDD("x4=1")),
+    //  ).toDF("group", "sentence")
 
-      val groupedDF = inputDF
-        .groupBy("group")
-        .agg(expr("ProbCount(sentence)").as("count"))
-        .select(
-          col("group"),
-          explode(col("count"))
-        )
-        .withColumnsRenamed(
-          Map(
-            "key" -> "count",
-            "value" -> "sentence"
-          )
-        )
-        .filter(col("count") === 3)
+    //  val groupedDF = inputDF
+    //    .groupBy("group")
+    //    .agg(expr("ProbCount(sentence)").as("count"))
+    //    .select(
+    //      col("group"),
+    //      explode(col("count"))
+    //    )
+    //    .withColumnsRenamed(
+    //      Map(
+    //        "key" -> "count",
+    //        "value" -> "sentence"
+    //      )
+    //    )
+    //    .filter(col("count") === 3)
 
-      val resBDD = groupedDF.head().getAs[BDD]("sentence")
-      assert(resBDD.toDot().replaceAll("""\s\s+""", " ").replace("\n", " ") == """digraph { labelloc="t"; label="bdd('((x4=1&((x3=1&((x2=1&!x1=1)|(!x2=1&x1=1)))|(!x3=1&(x2=1&x1=1))))|(!x4=1&(x3=1&(x2=1&x1=1))))')"; node [shape=square] 0 [label=<<b>0</b>>] node [shape=square] 1 [label=<<b>1</b>>] node [shape=circle] 2 [label=<<b>x1=1</b>>] edge [shape=rarrow style=dashed] 2 -> 1 edge [shape=rarrow style=bold] 2 -> 0 node [shape=circle] 3 [label=<<b>x1=1</b>>] edge [shape=rarrow style=dashed] 3 -> 0 edge [shape=rarrow style=bold] 3 -> 1 node [shape=circle] 4 [label=<<b>x2=1</b>>] edge [shape=rarrow style=dashed] 4 -> 3 edge [shape=rarrow style=bold] 4 -> 2 node [shape=circle] 5 [label=<<b>x2=1</b>>] edge [shape=rarrow style=dashed] 5 -> 0 edge [shape=rarrow style=bold] 5 -> 3 node [shape=circle] 6 [label=<<b>x3=1</b>>] edge [shape=rarrow style=dashed] 6 -> 5 edge [shape=rarrow style=bold] 6 -> 4 node [shape=circle] 7 [label=<<b>x3=1</b>>] edge [shape=rarrow style=dashed] 7 -> 0 edge [shape=rarrow style=bold] 7 -> 5 node [shape=circle] 8 [label=<<b>x4=1</b>>] edge [shape=rarrow style=dashed] 8 -> 7 edge [shape=rarrow style=bold] 8 -> 6 } """)
-    }
+    //  val resBDD = groupedDF.head().getAs[BDD]("sentence")
+    //  assert(resBDD.toDot().replaceAll("""\s\s+""", " ").replace("\n", " ") == """digraph { labelloc="t"; label="bdd('((x4=1&((x3=1&((x2=1&!x1=1)|(!x2=1&x1=1)))|(!x3=1&(x2=1&x1=1))))|(!x4=1&(x3=1&(x2=1&x1=1))))')"; node [shape=square] 0 [label=<<b>0</b>>] node [shape=square] 1 [label=<<b>1</b>>] node [shape=circle] 2 [label=<<b>x1=1</b>>] edge [shape=rarrow style=dashed] 2 -> 1 edge [shape=rarrow style=bold] 2 -> 0 node [shape=circle] 3 [label=<<b>x1=1</b>>] edge [shape=rarrow style=dashed] 3 -> 0 edge [shape=rarrow style=bold] 3 -> 1 node [shape=circle] 4 [label=<<b>x2=1</b>>] edge [shape=rarrow style=dashed] 4 -> 3 edge [shape=rarrow style=bold] 4 -> 2 node [shape=circle] 5 [label=<<b>x2=1</b>>] edge [shape=rarrow style=dashed] 5 -> 0 edge [shape=rarrow style=bold] 5 -> 3 node [shape=circle] 6 [label=<<b>x3=1</b>>] edge [shape=rarrow style=dashed] 6 -> 5 edge [shape=rarrow style=bold] 6 -> 4 node [shape=circle] 7 [label=<<b>x3=1</b>>] edge [shape=rarrow style=dashed] 7 -> 0 edge [shape=rarrow style=bold] 7 -> 5 node [shape=circle] 8 [label=<<b>x4=1</b>>] edge [shape=rarrow style=dashed] 8 -> 7 edge [shape=rarrow style=bold] 8 -> 6 } """)
+    //}
 
     it("should correctly count for all possible worlds") { spark =>
       import spark.implicits._

@@ -5,12 +5,22 @@ import org.apache.spark.sql.types.SQLUserDefinedType
 
 @SQLUserDefinedType(udt = classOf[BDDUDT])
 class BDD(val buffer: Array[Byte]) extends Serializable {
-  def |(that: BDD) = new BDD(
-    Native.bddOperator("|", buffer, that.buffer)
-  )
-  def &(that: BDD) = new BDD(
-    Native.bddOperator("&", buffer, that.buffer)
-  )
+  def |(that: BDD) = {
+    val bdd = new BDD(Native.bddOperator("|", buffer, that.buffer))
+    if (bdd == BDD.False)
+      BDD.False
+    else
+      bdd
+  }
+
+  def &(that: BDD) = {
+    val bdd = new BDD(Native.bddOperator("&", buffer, that.buffer))
+    if (bdd == BDD.False)
+      BDD.False
+    else
+      bdd
+  }
+
   def unary_~ = new BDD(Native.bddOperator("!", buffer, null))
 
   def probability(dict: ProbDict) = Native.bddProb(dict.buffer, buffer)
@@ -35,6 +45,8 @@ class BDD(val buffer: Array[Byte]) extends Serializable {
       }
     case _ => false
   }
+
+  def strictEquals(bdd: BDD) = Native.bddEqual(this.buffer, bdd.buffer)
 }
 
 object BDD {
