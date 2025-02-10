@@ -17,6 +17,8 @@
 #ifndef BDD_H
 #define BDD_H
 
+#include <stdint.h>
+
 #define BDD_FAIL  0
 #define BDD_OK    1
 
@@ -75,9 +77,9 @@ typedef struct bdd {
 #define BDD_COUNT_RVA_INSTANTIATIONS
 #endif
 
-typedef unsigned short locptr;
+typedef uint32_t locptr;
 
-#define LOC_EMPTY  USHRT_MAX
+#define LOC_EMPTY  UINT32_MAX
 
 typedef struct rva_order {
     rva     rva; 

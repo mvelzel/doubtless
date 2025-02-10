@@ -100,7 +100,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_bddOperator
 
 JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_bddProb
 (JNIEnv* env, jobject obj, jbyteArray dict_arr, jbyteArray bdd_arr) {
-    char* _errmsg;
+    char* _errmsg = NULL;
 
     jbyte* dict_bytes = (*env)->GetByteArrayElements(env, dict_arr, NULL);
 
@@ -111,6 +111,17 @@ JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_bddProb
 
     double prob = bdd_probability(dict, bdd_struct, NULL, 0, &_errmsg);
 
+    if (_errmsg != NULL) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+
+        (*env)->ReleaseByteArrayElements(env, dict_arr, dict_bytes, JNI_ABORT);
+        (*env)->ReleaseByteArrayElements(env, bdd_arr, bdd_bytes, JNI_ABORT);
+
+        (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
+
+        return 0;
+    }
+
     (*env)->ReleaseByteArrayElements(env, dict_arr, dict_bytes, JNI_ABORT);
     (*env)->ReleaseByteArrayElements(env, bdd_arr, bdd_bytes, JNI_ABORT);
 
@@ -119,7 +130,7 @@ JNIEXPORT jdouble JNICALL Java_com_doubtless_bdd_Native_00024_bddProb
 
 JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEqual
 (JNIEnv* env, jobject obj, jbyteArray left_bdd_arr, jbyteArray right_bdd_arr) {
-    char* _errmsg;
+    char* _errmsg = NULL;
 
     jbyte* left_bdd_bytes = (*env)->GetByteArrayElements(env, left_bdd_arr, NULL);
     jbyte* right_bdd_bytes = (*env)->GetByteArrayElements(env, right_bdd_arr, NULL);
@@ -128,6 +139,17 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEqual
     bdd* right_bdd = relocate_bdd((bdd*)right_bdd_bytes);
 
     jboolean equal = bdd_equal(left_bdd, right_bdd, &_errmsg);
+
+    if (_errmsg != NULL) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+
+        (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, JNI_ABORT);
+        (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, JNI_ABORT);
+
+        (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
+
+        return 0;
+    }
     
     (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, JNI_ABORT);
     (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, JNI_ABORT);
@@ -137,7 +159,7 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEqual
 
 JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEquiv
 (JNIEnv* env, jobject obj, jbyteArray left_bdd_arr, jbyteArray right_bdd_arr) {
-    char* _errmsg;
+    char* _errmsg = NULL;
 
     jbyte* left_bdd_bytes = (*env)->GetByteArrayElements(env, left_bdd_arr, NULL);
     jbyte* right_bdd_bytes = (*env)->GetByteArrayElements(env, right_bdd_arr, NULL);
@@ -146,6 +168,17 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEquiv
     bdd* right_bdd = relocate_bdd((bdd*)right_bdd_bytes);
 
     jboolean equal = bdd_equiv(left_bdd, right_bdd, &_errmsg);
+
+    if (_errmsg != NULL) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+
+        (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, JNI_ABORT);
+        (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, JNI_ABORT);
+
+        (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
+
+        return 0;
+    }
     
     (*env)->ReleaseByteArrayElements(env, right_bdd_arr, right_bdd_bytes, JNI_ABORT);
     (*env)->ReleaseByteArrayElements(env, left_bdd_arr, left_bdd_bytes, JNI_ABORT);
