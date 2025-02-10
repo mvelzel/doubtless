@@ -1,6 +1,7 @@
 {{
     config(
-        materialized='table'
+        materialized='table',
+        post_hook='{{ refresh_spark_table() }}'
     )
 }}
 

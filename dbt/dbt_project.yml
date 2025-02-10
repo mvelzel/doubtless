@@ -62,3 +62,4 @@ models:
       +schema: experiments
       +materialized: table
       +file_format: parquet
+      +post_hook: '{{ refresh_spark_table() }}'
