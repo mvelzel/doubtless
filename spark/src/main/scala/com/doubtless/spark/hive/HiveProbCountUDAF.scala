@@ -47,7 +47,7 @@ object HiveProbCountUDAF {
 
     def terminate(): java.util.Map[IntWritable, BytesWritable] =
       this.agg
-        .filter({ case (_, bdd) => bdd != BDD.False })
+        .filter({ case (_, bdd) => !bdd.strictEquals(BDD.False) })
         .map({ case (count, bdd) =>
           (new IntWritable(count)) -> new BytesWritable(bdd.buffer)
         })
