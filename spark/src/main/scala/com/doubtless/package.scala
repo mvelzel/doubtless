@@ -10,16 +10,16 @@ package object spark {
     val spark = if (isLocal) {
       SparkSession
         .builder()
-        .config("spark.sql.caseSensitive", value = true)
+        .config("spark.sql.caseSensitive", value = false)
         .config("spark.sql.session.timeZone", value = "UTC")
-        .config("spark.driver.memory", value = "8G")
+        .config("spark.driver.memory", value = "18G")
         .appName(appName)
         .master("local[*]")
         .getOrCreate()
     } else {
       SparkSession
         .builder()
-        .config("spark.sql.caseSensitive", value = true)
+        .config("spark.sql.caseSensitive", value = false)
         .config("spark.sql.session.timeZone", value = "UTC")
         .appName(appName)
         .enableHiveSupport()

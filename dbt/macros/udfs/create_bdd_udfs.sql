@@ -48,10 +48,20 @@
 
 {% endmacro %}
 
+{% macro create_bdd_equiv_udf() %}
+    
+    {% if target.name == 'spark' %}
+        create or replace function bdd_equiv as 'com.doubtless.spark.hive.HiveBDDEquiv';
+    {% else %}
+        select 1;
+    {% endif %}
+
+{% endmacro %}
+
 {% macro create_bdd_prob_udf() %}
     
     {% if target.name == 'spark' %}
-        create or replace function prob as 'com.doubtless.spark.hive.HiveBDDProb';
+        create or replace function prob as 'com.doubtless.spark.hive.HiveBDDNot';
     {% else %}
         select 1;
     {% endif %}

@@ -86,7 +86,7 @@ V_##type *V_##type##_init(V_##type *v) \
     v->magic   = VECTOR_MAGIC; \
     v->capacity = VECTOR_INIT_CAPACITY; \
     v->size = 0; \
-    v->items   = v->dynamic = malloc(sizeof(type) * v->capacity); \
+    v->items   = v->dynamic = MALLOC(sizeof(type) * v->capacity); \
     if ( !v->items ) return NULL; \
     return v; \
 } \
@@ -96,7 +96,7 @@ V_##type *V_##type##_init_estsz(V_##type *v, int est_sz) \
     v->magic   = VECTOR_MAGIC; \
     v->capacity = (est_sz>VECTOR_INIT_CAPACITY)?est_sz:VECTOR_INIT_CAPACITY; \
     v->size = 0; \
-    v->items   = v->dynamic = malloc(sizeof(type) * v->capacity); \
+    v->items   = v->dynamic = MALLOC(sizeof(type) * v->capacity); \
     if ( !v->items ) return NULL; \
     return v; \
 } \
@@ -165,12 +165,12 @@ int V_##type##_resize(V_##type *v, int capacity) \
             return 1; \
         } else { \
             /* malloc a new array but do not free old */ \
-            if ( !(v->dynamic = malloc(sizeof(type) * capacity))) \
+            if ( !(v->dynamic = MALLOC(sizeof(type) * capacity))) \
                 return 0; \
             memcpy(v->dynamic,v->items,v->size*sizeof(type)); \
         } \
     } else { \
-        if ( !(v->dynamic = realloc(v->dynamic, sizeof(type) * capacity))) \
+        if ( !(v->dynamic = REALLOC(v->dynamic, sizeof(type) * capacity))) \
             return 0; \
     } \
     v->capacity = capacity; \
@@ -296,7 +296,7 @@ void V_##type##_free(V_##type *v) \
     VECTOR_ASSERT(v); \
     if (0) memset(v->items,0,sizeof(V_##type)+v->capacity*sizeof(type)); \
     if ( v->dynamic ) { \
-        free(v->dynamic); \
+        FREE(v->dynamic); \
         v->dynamic = NULL; \
     }  \
     v->items = NULL; \

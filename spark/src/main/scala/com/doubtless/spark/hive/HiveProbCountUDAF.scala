@@ -27,7 +27,8 @@ object HiveProbCountUDAF {
 
     def iterate(bytes: BytesWritable) = {
       val inputBdd = new BDD(bytes.getBytes())
-      this.agg = ProbCountUDAF.reduce(this.agg, inputBdd)
+      this.agg = ProbCountUDAF
+        .reduce(this.agg, inputBdd)
       true
     }
 
@@ -38,7 +39,8 @@ object HiveProbCountUDAF {
         })
         .toMap
 
-      this.agg = ProbCountUDAF.merge(this.agg, otherAgg)
+      this.agg = ProbCountUDAF
+        .merge(this.agg, otherAgg)
       true
     }
 
@@ -46,8 +48,8 @@ object HiveProbCountUDAF {
       terminate()
 
     def terminate(): java.util.Map[IntWritable, BytesWritable] =
-      this.agg
-        .filter({ case (_, bdd) => !bdd.strictEquals(BDD.False) })
+      ProbCountUDAF
+        .finish(this.agg)
         .map({ case (count, bdd) =>
           (new IntWritable(count)) -> new BytesWritable(bdd.buffer)
         })

@@ -12,33 +12,14 @@ object Main extends App {
   val spark = createSparkSession("SparkTest", isLocal = true)
   import spark.implicits._
 
-  val inputDF = Seq(
-    (0, BDD("g0=0")),
-    (0, BDD("g0=1")),
-    (0, BDD("g0=2")),
-    (0, BDD("g0=3")),
-    (0, BDD("g0=4")),
-    (0, BDD("g1=0")),
-    (0, BDD("g1=1")),
-    (0, BDD("g1=2")),
-    (0, BDD("g1=3")),
-    (0, BDD("g1=4")),
-    (0, BDD("g2=0")),
-    (0, BDD("g2=1")),
-    (0, BDD("g2=2")),
-    (0, BDD("g2=3")),
-    (0, BDD("g2=4")),
-    (0, BDD("g3=0")),
-    (0, BDD("g3=1")),
-    (0, BDD("g3=2")),
-    (0, BDD("g3=3")),
-    (0, BDD("g3=4")),
-    (0, BDD("g4=0")),
-    (0, BDD("g4=1")),
-    (0, BDD("g4=2")),
-    (0, BDD("g4=3")),
-    (0, BDD("g4=4")),
-  ).toDF("group", "sentence")
+  val groupVariables = 10
+  var variableAlternatives = 10
+
+  val inputDF = (0 until groupVariables flatMap { variable =>
+    (0 until variableAlternatives map { alternative =>
+      (0, BDD(s"g$variable=$alternative"))
+    })
+  }).toDF("group", "sentence")
 
   val test = inputDF
     .groupBy("group")
@@ -57,12 +38,12 @@ object Main extends App {
     .orderBy(asc("group"), asc("count"))
 
   test.show()
-  //val bdd = test.head().getAs[BDD]("sentence")
+  // val bdd = test.head().getAs[BDD]("sentence")
 
-  //println(bdd.toExpr())
-  //println("Running equivalence:")
-  //println(bdd == BDD.False)
-  //println(bdd.toDot())
+  // println(bdd.toExpr())
+  // println("Running equivalence:")
+  // println(bdd == BDD.False)
+  // println(bdd.toDot())
 
   // val df = spark.read.json("data/offers_english.json")
   // df.printSchema()

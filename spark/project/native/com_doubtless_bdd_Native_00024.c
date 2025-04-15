@@ -167,7 +167,7 @@ JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddEquiv
     bdd* left_bdd = relocate_bdd((bdd*)left_bdd_bytes);
     bdd* right_bdd = relocate_bdd((bdd*)right_bdd_bytes);
 
-    jboolean equal = bdd_equiv(left_bdd, right_bdd, &_errmsg);
+    jboolean equal = bdd_fast_equiv(left_bdd, right_bdd, &_errmsg);
 
     if (_errmsg != NULL) {
         jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");

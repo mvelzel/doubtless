@@ -4,9 +4,14 @@ import org.apache.spark.sql.expressions.Aggregator
 import com.doubtless.bdd._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.Encoder
+import com.typesafe.config.ConfigFactory
 
 object ProbSumUDAF
     extends Aggregator[(Double, BDD), Map[Double, BDD], Map[Double, BDD]] {
+  val config = ConfigFactory.load().getConfig("com.doubtless.spark.prob-sum")
+
+  val filterOnFinish = config.getBoolean("filter-on-finish")
+
   def zero: Map[Double, BDD] = Map[Double, BDD]((0.0 -> BDD.True))
 
   override def reduce(b: Map[Double, BDD], a: (Double, BDD)): Map[Double, BDD] =
@@ -34,8 +39,13 @@ object ProbSumUDAF
         }
       )
 
-  override def finish(reduction: Map[Double, BDD]): Map[Double, BDD] =
-    reduction.filter({ case (_, bdd) => bdd != BDD.False })
+  override def finish(reduction: Map[Double, BDD]): Map[Double, BDD] = {
+    if (filterOnFinish) {
+      reduction.filter({ case (_, bdd) => bdd != BDD.False })
+    } else {
+      reduction
+    }
+  }
 
   def bufferEncoder: Encoder[Map[Double, BDD]] = ExpressionEncoder()
 

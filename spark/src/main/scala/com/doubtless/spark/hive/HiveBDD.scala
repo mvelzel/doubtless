@@ -41,6 +41,16 @@ class HiveBDDOr extends UDF {
   }
 }
 
+class HiveBDDEquiv extends UDF {
+  def evaluate(left: BytesWritable, right: BytesWritable): Boolean = {
+    if (left == null || right == null) return false
+
+    val leftBdd = new BDD(left.getBytes())
+    val rightBdd = new BDD(right.getBytes())
+    leftBdd == rightBdd
+  }
+}
+
 class HiveBDDNot extends UDF {
   def evaluate(input: BytesWritable): Array[Byte] = {
     if (input == null) return null
@@ -51,7 +61,10 @@ class HiveBDDNot extends UDF {
 }
 
 class HiveBDDProb extends UDF {
-  def evaluate(probDictInput: BytesWritable, bddInput: BytesWritable): Double = {
+  def evaluate(
+      probDictInput: BytesWritable,
+      bddInput: BytesWritable
+  ): Double = {
     val bdd = new BDD(bddInput.getBytes())
     val probDict = new ProbDict(probDictInput.getBytes())
 

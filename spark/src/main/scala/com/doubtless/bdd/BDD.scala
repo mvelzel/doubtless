@@ -7,18 +7,18 @@ import org.apache.spark.sql.types.SQLUserDefinedType
 class BDD(val buffer: Array[Byte]) extends Serializable {
   def |(that: BDD) = {
     val bdd = new BDD(Native.bddOperator("|", buffer, that.buffer))
-    if (bdd == BDD.False)
-      BDD.False
-    else
-      bdd
+    // if (bdd == BDD.False)
+    //  BDD.False
+    // else
+    bdd
   }
 
   def &(that: BDD) = {
     val bdd = new BDD(Native.bddOperator("&", buffer, that.buffer))
-    if (bdd == BDD.False)
-      BDD.False
-    else
-      bdd
+    // if (bdd == BDD.False)
+    //  BDD.False
+    // else
+    bdd
   }
 
   def unary_~ = new BDD(Native.bddOperator("!", buffer, null))
@@ -32,18 +32,8 @@ class BDD(val buffer: Array[Byte]) extends Serializable {
   override def toString(): String = s"BDD(${this.toExpr()})"
 
   override def equals(bdd: Any) = bdd match {
-    case b: BDD =>
-      // This ugly workaround is needed because BDDs with mismatching variables break the equivalence check.
-      // Example: x=2 and x=2&!x=1 without the workaround returns false.
-      // TODO Make a GitHub issue for this
-      if (!Native.bddEquiv(this.buffer, b.buffer)) {
-        val newLeft = BDD(s"(${this.toExpr()})|(0&(${b.toExpr}))")
-        val newRight = BDD(s"(${b.toExpr()})|(0&(${this.toExpr}))")
-        Native.bddEquiv(newLeft.buffer, newRight.buffer)
-      } else {
-        true
-      }
-    case _ => false
+    case b: BDD => Native.bddEquiv(this.buffer, b.buffer)
+    case _      => false
   }
 
   def strictEquals(bdd: BDD) = Native.bddEqual(this.buffer, bdd.buffer)

@@ -24,12 +24,14 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 on-run-start:
   # Create all UDFs
+  - '{{ create_config_udf() }}'
   - '{{ create_bdd_udf() }}'
   - '{{ create_bdd_to_string_udf() }}'
   - '{{ create_bdd_and_udf() }}'
   - '{{ create_bdd_or_udf() }}'
   - '{{ create_bdd_not_udf() }}'
   - '{{ create_bdd_prob_udf() }}'
+  - '{{ create_bdd_equiv_udf() }}'
   - '{{ create_prob_dict_udf() }}'
   - '{{ create_prob_dict_to_string_udf() }}'
   - '{{ create_bdd_agg_and_udaf() }}'
@@ -54,6 +56,7 @@ models:
       +schema: staging
       +materialized: view
       +file_format: parquet
+      +post-hook: '{{ refresh_spark_table() }}'
     intermediate:
       +schema: intermediate
       +materialized: view

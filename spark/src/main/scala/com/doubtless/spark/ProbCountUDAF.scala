@@ -4,8 +4,13 @@ import org.apache.spark.sql.expressions.Aggregator
 import com.doubtless.bdd._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.Encoder
+import com.typesafe.config.{ConfigFactory}
 
 object ProbCountUDAF extends Aggregator[BDD, Map[Int, BDD], Map[Int, BDD]] {
+  val config = ConfigFactory.load().getConfig("com.doubtless.spark.prob-count")
+
+  val filterOnFinish = config.getBoolean("filter-on-finish")
+
   def zero: Map[Int, BDD] = Map[Int, BDD]((0 -> BDD.True))
 
   override def reduce(agg: Map[Int, BDD], inputBdd: BDD): Map[Int, BDD] =
@@ -28,8 +33,12 @@ object ProbCountUDAF extends Aggregator[BDD, Map[Int, BDD], Map[Int, BDD]] {
         (0 to count)
           .map(i =>
             otherAgg get (i) match {
-              case Some(bdd) =>
-                (agg getOrElse (count - i, BDD.False)) & bdd
+              case Some(otherBdd) => {
+                agg get (count - i) match {
+                  case Some(bdd) => bdd & otherBdd
+                  case None      => BDD.False
+                }
+              }
               case None => BDD.False
             }
           )
@@ -37,8 +46,13 @@ object ProbCountUDAF extends Aggregator[BDD, Map[Int, BDD], Map[Int, BDD]] {
     }: _*)
   }
 
-  override def finish(reduction: Map[Int, BDD]): Map[Int, BDD] =
-    reduction.filter({ case (_, bdd) => !bdd.strictEquals(BDD.False) })
+  override def finish(reduction: Map[Int, BDD]): Map[Int, BDD] = {
+    if (filterOnFinish) {
+      reduction.filter({ case (_, bdd) => bdd != BDD.False })
+    } else {
+      reduction
+    }
+  }
 
   def bufferEncoder: Encoder[Map[Int, BDD]] = ExpressionEncoder()
 

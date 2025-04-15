@@ -52,7 +52,7 @@ static bdd_dictionary* bdd_dictionary_serialize(bdd_dictionary* dict) {
     bdd_dictionary* res = NULL;
 
     if ( bdd_dictionary_is_serialized(dict) ) {
-        if ( !(res  = (bdd_dictionary*)malloc(dict->bytesize)) )
+        if ( !(res  = (bdd_dictionary*)MALLOC(dict->bytesize)) )
             return NULL;
         memcpy(res,dict,dict->bytesize);
         if ( !bdd_dictionary_relocate(res) )
@@ -61,7 +61,7 @@ static bdd_dictionary* bdd_dictionary_serialize(bdd_dictionary* dict) {
         int varsize = V_dict_var_bytesize(dict->variables);
         int valsize = V_dict_val_bytesize(dict->values);
         int newsize = BDD_DICTIONARY_BASESIZE + varsize + valsize;
-        if ( !(res  = (bdd_dictionary*)malloc(newsize)) )
+        if ( !(res  = (bdd_dictionary*)MALLOC(newsize)) )
             return NULL;
         memcpy(res,dict,BDD_DICTIONARY_BASESIZE);
         res->bytesize = newsize;
@@ -531,7 +531,7 @@ bdd_dictionary_ref* create_ref_from_dict(bdd_dictionary* dict, char** _errmsg) {
     bdd_dictionary_ref* ref = NULL;
 
     // START_DP("/tmp/PG-DEBUG.TXT");
-    if (!(ref=(bdd_dictionary_ref*)malloc(sizeof(struct bdd_dictionary_ref)))) {
+    if (!(ref=(bdd_dictionary_ref*)MALLOC(sizeof(struct bdd_dictionary_ref)))) {
         pg_error(_errmsg,"bdd_dictionary_ref: palloc failed");
         return NULL;
     }

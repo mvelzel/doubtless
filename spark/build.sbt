@@ -31,7 +31,8 @@ lazy val root = (project in file ("."))
       "com.github.mrpowers" %% "spark-fast-tests" % "1.1.0" % "test",
       "org.scalactic" %% "scalactic" % "3.2.19",
       "org.scalatest" %% "scalatest-funspec" % "3.2.19" % "test",
-      "org.scalatest" %% "scalatest-funspec" % "3.2.19" % PerfTest
+      "org.scalatest" %% "scalatest-funspec" % "3.2.19" % PerfTest,
+      "com.typesafe" % "config" % "1.4.3"
     )
   )
   .disablePlugins(ScoverageSbtPlugin)

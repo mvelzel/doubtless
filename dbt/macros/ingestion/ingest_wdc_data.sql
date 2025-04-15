@@ -1,7 +1,7 @@
 {% macro ingest_wdc_data() %}
 
     {% if target.name == 'spark' %}
-        create table if not exists raw.raw_wdc using json location "/Users/mvelzel/offers_english.json";
+        create table if not exists raw.raw_wdc using json location "~/offers_english.json";
     {% elif target.name == 'postgres' and execute %}
         {% set data_exists_statement %}
             select exists (
@@ -14,7 +14,7 @@
 
         {% if not relation_exists %}
             create table raw.raw_wdc (json_data jsonb);
-            copy raw.raw_wdc from '/Users/mvelzel/offers_english.json' csv quote e'\x01' delimiter e'\x02';
+            copy raw.raw_wdc from '~/offers_english.json' csv quote e'\x01' delimiter e'\x02';
         {% else %}
             select 1;
         {% endif %}
