@@ -7,7 +7,7 @@
     experiment_name='experiment'
 ) -%}
     {%- set group_size = group_size or group_variables * variable_alternatives -%}
-    {%- set start_seed = 42 -%}
+    {%- set start_seed = 0 -%}
 
     {%- for group in range(groups) -%}
     {%- for i in range(group_size) -%}
@@ -15,7 +15,7 @@
     {% set alternative = '' ~ (i % variable_alternatives) %}
 
     {%- set seed_sql -%}
-    select setseed({{ (start_seed + i) + (group * group_size) }})
+    select setseed({{ (start_seed + i / group_size) + (group * group_size) }})
     {%- endset -%}
 
     {%- if include_random_numbers and target.name == 'postgres' %}
@@ -27,7 +27,7 @@
         {{ group }} as group,
         {% if include_random_numbers -%}
         {% if target.name == 'spark' -%}
-        rand({{ (start_seed + i) + (group * group_size) }}) as number,
+        rand({{ (start_seed + i / group_size) + (group * group_size) }}) as number,
         {% elif target.name == 'postgres' -%}
         random() as number,
         {% endif -%}
