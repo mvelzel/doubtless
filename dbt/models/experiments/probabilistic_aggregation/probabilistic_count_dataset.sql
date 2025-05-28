@@ -1,3 +1,4 @@
+{%- if target.name == 'spark' -%}
 {{
     config(
         materialized="incremental",
@@ -5,10 +6,18 @@
         incremental_strategy="insert_overwrite"
     )
 }}
+{%- elif target.name == 'postgres' -%}
+{{
+    config(
+        materialized="incremental",
+        unique_key=["experiment_name"],
+    )
+}}
+{%- endif -%}
 
 with dummy_data as (
 
-    {%- for variable_count in range(11, 13) -%}
+    {%- for variable_count in range(1, 5) -%}
     {%- for alternative_count in range(1, 13) -%}
     {{ generate_bdd_dummy_data(
         groups=1,

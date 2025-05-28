@@ -38,6 +38,7 @@ on-run-start:
   - '{{ create_bdd_agg_or_udaf() }}'
   - '{{ create_prob_count_udaf() }}'
   - '{{ create_prob_sum_udaf() }}'
+  - '{{ create_prob_min_udaf() }}'
   # Create pgbdd extension for postgres
   - '{{ create_pgbdd_extension() }}'
   # Ingest the raw data

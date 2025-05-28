@@ -11,15 +11,17 @@ from tqdm import tqdm
 import signal
 
 
-def build_dataset(dbt):
-    cli_args = ["build", "--select", "+probabilistic_count_dataset", "--quiet"]
+def build_dataset(dbt, target):
+    cli_args = ["build", "--select",
+                "+probabilistic_count_dataset", "--target", target, "--quiet"]
     dbt.invoke(cli_args)
 
 
-def run_experiment(dbt, experiment_name):
+def run_experiment(dbt, experiment_name, target):
     cli_args = [
         "run-operation", "run_prob_count_experiment",
         "--args", "{ experiment_name: " + experiment_name + " }",
+        "--target", target,
         "--quiet"
     ]
     res: dbtRunnerResult = dbt.invoke(cli_args)
@@ -33,9 +35,9 @@ def run_experiment(dbt, experiment_name):
             raise Exception(f"Running experiment {experiment_name} failed.")
 
 
-def run_all_experiments(dbt):
+def run_all_experiments(dbt, target):
     # Warmup the database so the first experiment is not disproportionally long
-    run_experiment(dbt, "prob_count_1_1")
+    run_experiment(dbt, "prob_count_1_1", target)
 
     execution_times: list[float] = []
     for variables in tqdm(range(1, 13)):
@@ -44,7 +46,7 @@ def run_all_experiments(dbt):
             time = float("nan")
             try:
                 time = float(run_experiment(
-                    dbt, f"prob_count_{variables}_{alternatives}"
+                    dbt, f"prob_count_{variables}_{alternatives}", target
                 ))
             except Exception as e:
                 print(e)
@@ -75,25 +77,45 @@ if __name__ == "__main__":
         help="Whether to rerun the experiments for a given config.",
         default=False
     )
+    parser.add_argument(
+        "--target",
+        help="Against what database to run the experiments.",
+        choices=["spark", "postgres"],
+        default="spark"
+    )
 
     args = parser.parse_args()
+
+    target = args.target
 
     dbt = dbtRunner()
 
     if args.build_dataset:
         print("Building dataset...")
-        build_dataset(dbt)
+        build_dataset(dbt, target)
 
-    with contextlib.redirect_stdout(None):
-        cli_args = [
-            "show", "--inline", "select config()",
-            "--quiet"
-        ]
-        config_res: dbtRunnerResult = dbt.invoke(cli_args)
+    if target == "spark":
+        with contextlib.redirect_stdout(None):
+            cli_args = [
+                "show", "--inline", "select config()",
+                "--target", target,
+                "--quiet"
+            ]
+            config_res: dbtRunnerResult = dbt.invoke(cli_args)
 
-    config = json.loads(
-        config_res.result.results[0].agate_table.columns[0].values()[0]
-    )
+        config = json.loads(
+            config_res.result.results[0].agate_table.columns[0].values()[0]
+        )
+    else:
+        # TODO Make this an actual config
+        config = {
+            "prob-count": {
+                "filter-on-finish": False
+            },
+            "prob-sum": {
+                "filter-on-finish": False
+            }
+        }
     print("Current config:")
     print(json.dumps(config, sort_keys=True, indent=4))
 
@@ -101,11 +123,11 @@ if __name__ == "__main__":
         config, sort_keys=True).encode("utf-8")
     ).hexdigest()
 
-    conf_dir = f"experiment_results/{hash}"
+    conf_dir = f"experiment_results/{target}/{hash}"
     if not args.rerun and os.path.isdir(conf_dir):
         execution_times = np.load(f"{conf_dir}/execution_times.npy")
     else:
-        execution_times = np.array(run_all_experiments(dbt))
+        execution_times = np.array(run_all_experiments(dbt, target))
 
         if not os.path.isdir(conf_dir):
             os.mkdir(conf_dir)

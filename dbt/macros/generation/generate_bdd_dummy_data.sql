@@ -27,7 +27,7 @@
         {{ group }} as group,
         {% if include_random_numbers -%}
         {% if target.name == 'spark' -%}
-        rand({{ (start_seed + i / group_size) + (group * group_size) }}) as number,
+        rand({{ (start_seed + i) + (group * group_size) }}) as number,
         {% elif target.name == 'postgres' -%}
         random() as number,
         {% endif -%}

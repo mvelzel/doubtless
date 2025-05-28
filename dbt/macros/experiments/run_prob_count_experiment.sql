@@ -9,12 +9,14 @@
     )
 
     {% if target.name == 'spark' %}
-        select key as count, value as sentence
-        from grouped lateral view explode(map) explodeVal as key, value
+        select key as count
+        from grouped lateral view posexplode(map) explodeVal as key, value
         order by count asc;
     {% elif target.name == 'postgres' %}
-        select x.cp1 - 1 as count, x.bdd as sentence from grouped
-        left join lateral unnest(map) with ordinality as x(bdd, cp1) on true;
+        select res.count from grouped
+        left join lateral (
+            select * from {{ consume_prob_agg_results('grouped.map') }} as res(count integer,sentence bdd)
+        ) res on true;
     {% endif %}
     {% endset %}
 
