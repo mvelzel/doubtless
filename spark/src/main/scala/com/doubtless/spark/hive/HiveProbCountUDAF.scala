@@ -19,7 +19,7 @@ select key, bdd_to_string(value) from grouped lateral view explode(map) explodeV
 class HiveProbCountUDAF extends UDAF {}
 object HiveProbCountUDAF {
   class HiveProbCountEvaluator extends UDAFEvaluator {
-    var agg: Map[Int, BDD] = ProbCountUDAF.zero
+    var agg: List[BDD] = ProbCountUDAF.zero
 
     override def init() = {
       this.agg = ProbCountUDAF.zero
@@ -32,27 +32,26 @@ object HiveProbCountUDAF {
       true
     }
 
-    def merge(inter: java.util.Map[IntWritable, BytesWritable]) = {
+    def merge(inter: java.util.List[BytesWritable]) = {
       val otherAgg = inter.asScala
-        .map({ case (count, bytes) =>
-          (count.get()) -> new BDD(bytes.getBytes())
-        })
-        .toMap
+        .map((bytes) => new BDD(bytes.getBytes()))
+        .toList
 
       this.agg = ProbCountUDAF
         .merge(this.agg, otherAgg)
+
       true
     }
 
-    def terminatePartial(): java.util.Map[IntWritable, BytesWritable] =
+    def terminatePartial(): java.util.List[BytesWritable] = {
       terminate()
+    }
 
-    def terminate(): java.util.Map[IntWritable, BytesWritable] =
+    def terminate(): java.util.List[BytesWritable] = {
       ProbCountUDAF
         .finish(this.agg)
-        .map({ case (count, bdd) =>
-          (new IntWritable(count)) -> new BytesWritable(bdd.buffer)
-        })
+        .map((bdd) => new BytesWritable(bdd.buffer))
         .asJava
+    }
   }
 }

@@ -6,19 +6,21 @@ import org.apache.spark.sql.types.SQLUserDefinedType
 @SQLUserDefinedType(udt = classOf[BDDUDT])
 class BDD(val buffer: Array[Byte]) extends Serializable {
   def |(that: BDD) = {
-    val bdd = new BDD(Native.bddOperator("|", buffer, that.buffer))
-    // if (bdd == BDD.False)
-    //  BDD.False
-    // else
-    bdd
+    //if (this.strictEquals(BDD.False))
+    //  that
+    //else if (that.strictEquals(BDD.False))
+    //  this
+    //else
+      new BDD(Native.bddOperator("|", buffer, that.buffer))
   }
 
   def &(that: BDD) = {
-    val bdd = new BDD(Native.bddOperator("&", buffer, that.buffer))
-    // if (bdd == BDD.False)
-    //  BDD.False
-    // else
-    bdd
+    //if (this.strictEquals(BDD.True))
+    //  that
+    //else if (that.strictEquals(BDD.True))
+    //  this
+    //else
+      new BDD(Native.bddOperator("&", buffer, that.buffer))
   }
 
   def unary_~ = new BDD(Native.bddOperator("!", buffer, null))

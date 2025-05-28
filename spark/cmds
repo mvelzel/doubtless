@@ -23,3 +23,8 @@ https://stackoverflow.com/questions/21106548/how-to-use-jni-in-spark
 -- spark-defaults.conf
 spark.driver.extraLibraryPath   /home/mvelzel/scala_native/spark/project/native
 spark.executor.extraLibraryPath /home/mvelzel/scala_native/spark/project/native
+
+
+~/spark-3.5.4-bin-hadoop3-scala2.13/sbin/start-master.sh -h localhost
+~/spark-3.5.4-bin-hadoop3-scala2.13/sbin/start-worker.sh spark://localhost:7077 --host localhost
+~/spark-3.5.4-bin-hadoop3-scala2.13/sbin/start-thriftserver.sh --master spark://localhost:7077 --driver-java-options -Dconfig.file=/Users/mvelzel/doubtless/spark/src/main/resources/application.conf

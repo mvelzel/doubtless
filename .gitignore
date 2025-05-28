@@ -3,4 +3,7 @@
 .bsp
 spark-warehouse/
 metastore_db/
+dbt/spark-warehouse/
+dbt/metastore_db/
+spark/project/native/metastore_db/
 .DS_store
