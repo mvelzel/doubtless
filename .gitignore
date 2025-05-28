@@ -7,3 +7,4 @@ dbt/spark-warehouse/
 dbt/metastore_db/
 spark/project/native/metastore_db/
 .DS_store
+derby.log

@@ -12,7 +12,7 @@ uv sync
 ```
 
 ```
-uv run dbt sync
+uv run dbt deps
 ```
 
 ### Transforming the data

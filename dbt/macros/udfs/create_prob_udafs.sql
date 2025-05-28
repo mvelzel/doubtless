@@ -145,3 +145,13 @@
     {% endif %}
 
 {% endmacro %}
+
+{% macro create_prob_max_udaf() %}
+
+    {% if target.name == 'spark' %}
+        create or replace function prob_max as 'com.doubtless.spark.hive.HiveProbMaxGenericUDAF';
+    {% else %}
+        select 1;
+    {% endif %}
+
+{% endmacro %}
