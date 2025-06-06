@@ -1,0 +1,242 @@
+package com.doubtless.spark.hive
+
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo
+import org.apache.hadoop.hive.ql.metadata.HiveException
+import java.util.ArrayList
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.{
+  AbstractAggregationBuffer,
+  AggregationBuffer,
+  Mode
+}
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator
+import org.apache.hadoop.io.{DoubleWritable, BytesWritable, IntWritable}
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.{
+  PrimitiveObjectInspectorFactory,
+  DoubleObjectInspector,
+  BinaryObjectInspector,
+  PrimitiveObjectInspectorUtils
+}
+import org.apache.hadoop.hive.serde2.objectinspector._;
+import scala.jdk.CollectionConverters._
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException
+import com.doubtless.spark.ProbAvgUDAF
+import com.doubtless.bdd.BDD
+import org.apache.hadoop.hive.ql.udf.generic.{
+  AbstractGenericUDAFResolver,
+  GenericUDAFEvaluator,
+  GenericUDAFParameterInfo
+}
+
+class ProbAvgAggBuffer extends AbstractAggregationBuffer {
+  var resultList: List[(Int, Double, BDD)] = _
+}
+
+class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
+  // Input ObjectInspectors
+  private var inputAvgOI: DoubleObjectInspector = _
+  private var inputBddOI: BinaryObjectInspector = _
+
+  // For PARTIAL2 and FINAL: ObjectInspectors for partial aggregations
+  private var loi: ListObjectInspector = _;
+
+  // Output ObjectInspectors
+  private val partialStructFieldNames: java.util.List[String] =
+    java.util.List.of("count", "sum", "bdd")
+  private val structFieldNames: java.util.List[String] =
+    java.util.List.of("avg", "bdd")
+
+  override def init(
+      mode: Mode,
+      parameters: Array[ObjectInspector]
+  ): ObjectInspector = {
+    super.init(mode, parameters)
+
+    if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
+      if (parameters.length != 2) {
+        throw new UDFArgumentException(
+          "prob_avg requires 2 arguments (double, binary)"
+        )
+      }
+
+      parameters(0) match {
+        case oi: DoubleObjectInspector => inputAvgOI = oi
+        case _ =>
+          throw new UDFArgumentException("Argument 1 (number) must be a double")
+      }
+
+      parameters(1) match {
+        case oi: BinaryObjectInspector => inputBddOI = oi
+        case _ =>
+          throw new UDFArgumentException("Argument 2 (bdd) must be binary")
+      }
+    } else {
+      parameters(0) match {
+        case oi: ListObjectInspector => loi = oi
+        case _ =>
+          throw new UDFArgumentException("Intermediate result must be list")
+      }
+    }
+
+    if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {
+      val outputStructFieldOIs = new ArrayList[ObjectInspector]()
+      outputStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableIntObjectInspector
+      )
+      outputStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector
+      )
+      outputStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableBinaryObjectInspector
+      )
+      val partialOutputStructOI = ObjectInspectorFactory
+        .getStandardStructObjectInspector(
+          partialStructFieldNames,
+          outputStructFieldOIs
+        )
+
+      return ObjectInspectorFactory.getStandardListObjectInspector(
+        partialOutputStructOI
+      )
+    } else {
+      val outputStructFieldOIs = new ArrayList[ObjectInspector]()
+      outputStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector
+      )
+      outputStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableBinaryObjectInspector
+      )
+      val finalOutputStructOI = ObjectInspectorFactory
+        .getStandardStructObjectInspector(
+          structFieldNames,
+          outputStructFieldOIs
+        )
+
+      return ObjectInspectorFactory.getStandardListObjectInspector(
+        finalOutputStructOI
+      )
+    }
+  }
+
+  override def getNewAggregationBuffer(): AggregationBuffer = {
+    val res = new ProbAvgAggBuffer()
+    reset(res)
+    res
+  }
+
+  override def reset(agg: AggregationBuffer): Unit = {
+    agg.asInstanceOf[ProbAvgAggBuffer].resultList = ProbAvgUDAF.zero
+  }
+
+  override def iterate(
+      agg: AggregationBuffer,
+      parameters: Array[Object]
+  ): Unit = {
+    if (
+      parameters == null || parameters.length != 2 || parameters(
+        0
+      ) == null || parameters(1) == null
+    ) {
+      return
+    }
+
+    val buffer = agg.asInstanceOf[ProbAvgAggBuffer]
+    val avgVal =
+      PrimitiveObjectInspectorUtils.getDouble(parameters(0), inputAvgOI);
+    val bddVal = inputBddOI.getPrimitiveWritableObject(parameters(1))
+
+    val inputBdd = new BDD(bddVal.getBytes())
+
+    buffer.resultList =
+      ProbAvgUDAF.reduce(buffer.resultList, (avgVal, inputBdd))
+  }
+
+  override def merge(agg: AggregationBuffer, partial: Object): Unit = {
+    if (partial == null) return
+
+    val buffer = agg.asInstanceOf[ProbAvgAggBuffer]
+    val partialStructList =
+      loi.getList(partial).asInstanceOf[java.util.List[ArrayList[AnyRef]]]
+
+    val rightConvAgg = partialStructList.asScala
+      .map(b =>
+        (
+          b.get(0).asInstanceOf[IntWritable].get(),
+          b.get(1).asInstanceOf[DoubleWritable].get(),
+          new BDD(b.get(2).asInstanceOf[BytesWritable].getBytes())
+        )
+      )
+      .toList
+
+    buffer.resultList = ProbAvgUDAF
+      .merge(buffer.resultList, rightConvAgg)
+  }
+
+  override def terminatePartial(agg: AggregationBuffer): AnyRef = {
+    val buffer = agg.asInstanceOf[ProbAvgAggBuffer]
+
+    buffer.resultList
+      .map({
+        case (count, sum, bdd) => {
+          val res = new ArrayList[AnyRef]()
+          res.add(new IntWritable(count))
+          res.add(new DoubleWritable(sum))
+          res.add(new BytesWritable(bdd.buffer))
+
+          res
+        }
+      })
+      .asJava
+  }
+
+  override def terminate(agg: AggregationBuffer): AnyRef = {
+    val buffer = agg.asInstanceOf[ProbAvgAggBuffer]
+    if (buffer.resultList == null || buffer.resultList.isEmpty) {
+      return null
+    }
+
+    ProbAvgUDAF
+      .finish(buffer.resultList)
+      .map({
+        case (avgOpt, bdd) => {
+          val avg: DoubleWritable = avgOpt match {
+            case Some(num) => new DoubleWritable(num)
+            case None      => null
+          }
+
+          val res = new ArrayList[AnyRef]()
+          res.add(avg)
+          res.add(new BytesWritable(bdd.buffer))
+
+          res
+        }
+      })
+      .asJava
+  }
+}
+
+class HiveProbAvgGenericUDAF extends AbstractGenericUDAFResolver {
+  @throws[HiveException]
+  override def getEvaluator(
+      parameters: Array[TypeInfo]
+  ): GenericUDAFEvaluator = {
+    if (parameters.length != 2) {
+      throw new UDFArgumentException("prob_avg requires 2 arguments")
+    }
+    // Add more specific TypeInfo checks for DOUBLE and BINARY if desired
+    new HiveProbAvgGenericUDAFEvaluator()
+  }
+
+  @throws[HiveException]
+  override def getEvaluator(
+      info: GenericUDAFParameterInfo
+  ): GenericUDAFEvaluator = {
+    val parameters: Array[ObjectInspector] = info.getParameterObjectInspectors()
+    if (parameters.length != 2) {
+      throw new UDFArgumentException(
+        "prob_avg requires 2 arguments (from GenericUDAFParameterInfo)"
+      )
+    }
+    // Can add specific ObjectInspector checks here
+    new HiveProbAvgGenericUDAFEvaluator()
+  }
+}

@@ -22,31 +22,28 @@
     {%- do run_query(seed_sql) -%}
     {%- endif %}
 
-    select
-        '{{ experiment_name }}' as experiment_name,
-        {{ group }} as group,
+    (
+        '{{ experiment_name }}',
+        {{ group }},
         {% if include_random_numbers -%}
-        {% if target.name == 'spark' -%}
-        rand({{ (start_seed + i) + (group * group_size) }}) as number,
-        {% elif target.name == 'postgres' -%}
-        random() as number,
-        {% endif -%}
+        {{ (range(100) | random) / 100 }},
         {% endif -%}
         {% if i >= group_variables * variable_alternatives -%}
-        bdd('g1=0') as sentence,
-        'g1' as variable,
-        0 as alternative,
+        bdd('g1=0'),
+        'g1',
+        0,
         {% else -%}
-        bdd('{{ var_name ~ "=" ~ alternative }}') as sentence,
-        '{{ var_name }}' as variable,
-        {{ alternative }} as alternative
+        bdd('{{ var_name ~ "=" ~ alternative }}'),
+        '{{ var_name }}',
+        {{ alternative }}
         {% endif -%}
+    )
     {%- if not loop.last %}
-    union all
+    ,
     {%- endif %}
     {%- endfor -%}
     {%- if not loop.last %}
-    union all
+    ,
     {%- endif %}
     {%- endfor -%}
 

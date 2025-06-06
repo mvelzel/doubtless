@@ -22,6 +22,9 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
+vars:
+  postgres_prob_agg_type: 'inmemory'
+
 on-run-start:
   # Create all UDFs
   - '{{ create_config_udf() }}'
@@ -37,10 +40,12 @@ on-run-start:
   # Create all UDAFs
   - '{{ create_bdd_agg_and_udaf() }}'
   - '{{ create_bdd_agg_or_udaf() }}'
+  - '{{ create_consume_prob_agg_functions() }}'
   - '{{ create_prob_count_udaf() }}'
   - '{{ create_prob_sum_udaf() }}'
   - '{{ create_prob_min_udaf() }}'
   - '{{ create_prob_max_udaf() }}'
+  - '{{ create_prob_avg_udaf() }}'
   # Create pgbdd extension for postgres
   - '{{ create_pgbdd_extension() }}'
   # Ingest the raw data
