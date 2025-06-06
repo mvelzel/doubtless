@@ -12,9 +12,10 @@ object ProbAvgUDAF
       List[(Int, Double, BDD)],
       List[(Option[Double], BDD)]
     ] {
-  val config = ConfigFactory.load().getConfig("com.doubtless.spark.prob-avg")
+  val config =
+    ConfigFactory.load().getConfig("com.doubtless.spark.aggregations")
 
-  val filterOnFinish = config.getBoolean("filter-on-finish")
+  val pruneMethod = config.getString("prune-method")
 
   def zero: List[(Int, Double, BDD)] =
     List[(Int, Double, BDD)]((0, 0.0, BDD.True))
@@ -35,16 +36,23 @@ object ProbAvgUDAF
       }
     })
 
-    oldSums ++ newSums.filter(newS =>
+    val res = oldSums ++ newSums.filter(newS =>
       !oldSums.exists(oldS => oldS._1 == newS._1 && oldS._2 == newS._2)
     )
+
+    if (pruneMethod == "each-operation")
+      res.filter(tup => !tup._3.strictEquals(BDD.False))
+    else if (pruneMethod == "each-step")
+      res.filter(tup => !tup._3.equals(BDD.False))
+    else
+      res
   }
 
   override def merge(
       b1: List[(Int, Double, BDD)],
       b2: List[(Int, Double, BDD)]
-  ): List[(Int, Double, BDD)] =
-    b1
+  ): List[(Int, Double, BDD)] = {
+    val res = b1
       .flatMap(tup1 => b2.map(tup2 => (tup1, tup2)))
       .foldLeft(Map[(Int, Double), BDD]())((acc, tups) =>
         acc get ((tups._1._1 + tups._2._1, tups._1._2 + tups._2._2)) match {
@@ -61,16 +69,23 @@ object ProbAvgUDAF
         }
       )
       .map({ case ((count, sum), bdd) => (count, sum, bdd) })
-      .toList
+
+    if (pruneMethod == "each-operation")
+      res.filter(tup => !tup._3.strictEquals(BDD.False)).toList
+    else if (pruneMethod == "each-step")
+      res.filter(tup => !tup._3.equals(BDD.False)).toList
+    else
+      res.toList
+  }
 
   override def finish(
       reduction: List[(Int, Double, BDD)]
   ): List[(Option[Double], BDD)] = {
-    val newReduction = if (filterOnFinish) {
-      reduction.filter({ case (_, _, bdd) => bdd != BDD.False })
-    } else {
-      reduction
-    }
+    val newReduction =
+      if (pruneMethod == "on-finish")
+        reduction.filter({ case (_, _, bdd) => !bdd.equals(BDD.False) })
+      else
+        reduction
 
     newReduction
       .map({

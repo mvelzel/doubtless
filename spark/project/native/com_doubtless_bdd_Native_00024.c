@@ -203,6 +203,29 @@ JNIEXPORT jstring JNICALL Java_com_doubtless_bdd_Native_00024_bddGenerateDot
     return res;
 }
 
+JNIEXPORT jboolean JNICALL Java_com_doubtless_bdd_Native_00024_bddPropertyCheck
+(JNIEnv * env, jobject obj, jbyteArray bdd_arr, jint prop, jstring var_string) {
+    char* _errmsg = NULL;
+
+    jbyte* bdd_bytes = (*env)->GetByteArrayElements(env, bdd_arr, NULL);
+
+    jboolean res = bdd_property_check((bdd*)bdd_bytes, (int)prop, NULL, &_errmsg);
+
+    if (_errmsg != NULL) {
+        jclass error_class = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+
+        (*env)->ReleaseByteArrayElements(env, bdd_arr, bdd_bytes, JNI_ABORT);
+
+        (*env)->ThrowNew(env, error_class, (_errmsg ? _errmsg : "NULL"));
+
+        return 0;
+    }
+
+    (*env)->ReleaseByteArrayElements(env, bdd_arr, bdd_bytes, JNI_ABORT);
+
+    return res;
+}
+
 JNIEXPORT jbyteArray JNICALL Java_com_doubtless_bdd_Native_00024_createDict
 (JNIEnv* env, jobject obj, jstring vardefs) {
     bdd_dictionary new_dict_struct, *dict;

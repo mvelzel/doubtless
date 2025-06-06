@@ -15,6 +15,7 @@ private[bdd] object Native {
   @native def bddEqual(leftBdd: Array[Byte], rightBdd: Array[Byte]): Boolean
   @native def bddEquiv(leftBdd: Array[Byte], rightBdd: Array[Byte]): Boolean
   @native def bddGenerateDot(bdd: Array[Byte]): String
+  @native def bddPropertyCheck(bdd: Array[Byte], property: Int, varString: String): Boolean
 
   @native def createDict(varDefs: String): Array[Byte]
   @native def dict2string(dict: Array[Byte]): String

@@ -12,9 +12,9 @@ object ProbSumUDAF
       List[(Double, BDD)],
       List[(Double, BDD)]
     ] {
-  val config = ConfigFactory.load().getConfig("com.doubtless.spark.prob-sum")
+  val config = ConfigFactory.load().getConfig("com.doubtless.spark.aggregations")
 
-  val filterOnFinish = config.getBoolean("filter-on-finish")
+  val pruneMethod = config.getString("prune-method")
 
   def zero: List[(Double, BDD)] = List[(Double, BDD)]((0.0 -> BDD.True))
 
@@ -37,17 +37,24 @@ object ProbSumUDAF
         }
       })
 
-      oldSums ++ newSums.filter(newS =>
+      val res = oldSums ++ newSums.filter(newS =>
         !oldSums.exists(oldS => oldS._1 == newS._1)
       )
+
+      if (pruneMethod == "each-operation")
+        res.filter(tup => !tup._2.strictEquals(BDD.False))
+      else if (pruneMethod == "each-step")
+        res.filter(tup => !tup._2.equals(BDD.False))
+      else
+        res
     }
   }
 
   override def merge(
       b1: List[(Double, BDD)],
       b2: List[(Double, BDD)]
-  ): List[(Double, BDD)] =
-    b1
+  ): List[(Double, BDD)] = {
+    val res = b1
       .flatMap(tup1 => b2.map(tup2 => (tup1, tup2)))
       .foldLeft(Map[Double, BDD]())((acc, tups) =>
         acc get (tups._1._1 + tups._2._1) match {
@@ -57,14 +64,20 @@ object ProbSumUDAF
             acc + ((tups._1._1 + tups._2._1) -> (tups._1._2 & tups._2._2))
         }
       )
-      .toList
+
+    if (pruneMethod == "each-operation")
+      res.filter(tup => !tup._2.strictEquals(BDD.False)).toList
+    else if (pruneMethod == "each-step")
+      res.filter(tup => !tup._2.equals(BDD.False)).toList
+    else
+      res.toList
+  }
 
   override def finish(reduction: List[(Double, BDD)]): List[(Double, BDD)] = {
-    if (filterOnFinish) {
-      reduction.filter({ case (_, bdd) => bdd != BDD.False })
-    } else {
+    if (pruneMethod == "on-finish")
+      reduction.filter({ case (_, bdd) => !bdd.equals(BDD.False) })
+    else
       reduction
-    }
   }
 
   def bufferEncoder: Encoder[List[(Double, BDD)]] = ExpressionEncoder()

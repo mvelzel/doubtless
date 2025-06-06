@@ -10,9 +10,10 @@ object ProbMaxUDAF
     extends Aggregator[(Option[Double], BDD), List[
       (Option[Double], BDD)
     ], List[(Option[Double], BDD)]] {
-  val config = ConfigFactory.load().getConfig("com.doubtless.spark.prob-max")
+  val config =
+    ConfigFactory.load().getConfig("com.doubtless.spark.aggregations")
 
-  val filterOnFinish = config.getBoolean("filter-on-finish")
+  val pruneMethod = config.getString("prune-method")
 
   def zero: List[(Option[Double], BDD)] =
     List[(Option[Double], BDD)]((None, BDD.True))
@@ -40,10 +41,18 @@ object ProbMaxUDAF
         (max) -> bdd
     })
 
-    if (!newBddIncluded)
-      ((a._1) -> newBdd) :: newMap
+    val res =
+      if (!newBddIncluded)
+        ((a._1) -> newBdd) :: newMap
+      else
+        newMap
+
+    if (pruneMethod == "each-operation")
+      res.filter(tup => !tup._2.strictEquals(BDD.False))
+    else if (pruneMethod == "each-step")
+      res.filter(tup => !tup._2.equals(BDD.False))
     else
-      newMap
+      res
   }
 
   override def merge(
@@ -91,7 +100,7 @@ object ProbMaxUDAF
         }
       )
 
-    (None, b1Null & b2Null) :: (leftMap.keySet ++ rightMap.keySet)
+    val res = (leftMap.keySet ++ rightMap.keySet)
       .map(key =>
         leftMap get (key) match {
           case Some(leftBdd) =>
@@ -103,17 +112,26 @@ object ProbMaxUDAF
             ((key) -> rightMap(key))
         }
       )
-      .toList
+
+    if (pruneMethod == "each-operation")
+      (None, b1Null & b2Null) :: res
+        .filter(tup => !tup._2.strictEquals(BDD.False))
+        .toList
+    else if (pruneMethod == "each-step")
+      (None, b1Null & b2Null) :: res
+        .filter(tup => !tup._2.equals(BDD.False))
+        .toList
+    else
+      (None, b1Null & b2Null) :: res.toList
   }
 
   override def finish(
       reduction: List[(Option[Double], BDD)]
   ): List[(Option[Double], BDD)] = {
-    if (filterOnFinish) {
-      reduction.filter({ case (_, bdd) => bdd != BDD.False })
-    } else {
+    if (pruneMethod == "on-finish")
+      reduction.filter({ case (_, bdd) => !bdd.equals(BDD.False) })
+    else
       reduction
-    }
   }
 
   def bufferEncoder: Encoder[List[(Option[Double], BDD)]] =

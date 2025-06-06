@@ -8,6 +8,8 @@ import com.doubtless.spark._
 import org.apache.spark.sql.functions
 import org.scalatest.BeforeAndAfterEach
 import com.typesafe.config.ConfigFactory
+import org.apache.spark.sql.Column
+import org.apache.spark.sql.catalyst.expressions.objects.AssertNotNull
 
 class UDFSpec
     extends FixtureAnyFunSpec
@@ -39,9 +41,7 @@ class UDFSpec
     originalProperties =
       sys.props.filter(tup => tup._1.startsWith(configPath)).toMap
 
-    sys.props += s"$configPath.prob-sum.filter-on-finish" -> "true"
-    sys.props += s"$configPath.prob-count.filter-on-finish" -> "true"
-    sys.props += s"$configPath.prob-min.filter-on-finish" -> "true"
+    sys.props += s"$configPath.aggregations.prune-method" -> "on-finish"
 
     ConfigFactory.invalidateCaches()
   }
@@ -103,23 +103,22 @@ class UDFSpec
       ).toDF("group", "sentence", "total")
         .orderBy(asc("group"), asc("total"))
 
-      val actualDF = inputDF
-        .groupBy("group")
-        .agg(expr("ProbSum(num,sentence)").as("total"))
-        .select(
-          col("group"),
-          explode(col("total"))
-        )
-        .withColumnsRenamed(
-          Map(
-            "key" -> "total",
-            "value" -> "sentence"
-          )
-        )
-        .select("group", "sentence", "total")
-        .orderBy(asc("group"), asc("total"))
+    val actualDF = inputDF
+      .groupBy("group")
+      .agg(expr("ProbSum(num,sentence)").as("total"))
+      .select(
+        col("group"),
+        explode(col("total"))
+      )
+      .select(
+        col("group"),
+        col("col._2").as("sentence"),
+        col("col._1").as("total")
+      )
+      .withColumn("total", new Column(AssertNotNull(col("total").expr)))
+      .orderBy(asc("group"), asc("total"))
 
-      assertSmallDatasetEquality(actualDF, expectedDF)
+    assertSmallDatasetEquality(actualDF, expectedDF)
     }
 
     it(
@@ -152,13 +151,12 @@ class UDFSpec
           col("group"),
           explode(col("total"))
         )
-        .withColumnsRenamed(
-          Map(
-            "key" -> "total",
-            "value" -> "sentence"
-          )
+        .select(
+          col("group"),
+          col("col._2").as("sentence"),
+          col("col._1").as("total")
         )
-        .select("group", "sentence", "total")
+        .withColumn("total", new Column(AssertNotNull(col("total").expr)))
         .orderBy(asc("group"), asc("total"))
 
       assertSmallDatasetEquality(actualDF, expectedDF)
@@ -233,13 +231,12 @@ class UDFSpec
             col("group"),
             explode(col("total"))
           )
-          .withColumnsRenamed(
-            Map(
-              "key" -> "total",
-              "value" -> "sentence"
-            )
+          .select(
+            col("group"),
+            col("col._2").as("sentence"),
+            col("col._1").as("total")
           )
-          .select("group", "sentence", "total")
+          .withColumn("total", new Column(AssertNotNull(col("total").expr)))
           .orderBy(asc("group"), asc("total"))
 
         assertSmallDatasetEquality(actualDF, expectedDF)

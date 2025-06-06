@@ -26,6 +26,15 @@ class BDDSpec extends FixtureAnyFunSpec {
       assert(fixture.bdd2 == BDD("(x=2&z=1&y=2)"))
     }
 
+    it("should correctly determine falsehood") { _ =>
+      val bdd1 = BDD("x=1")
+      val bdd2 = BDD("x=2")
+      val falseBdd = bdd1 & bdd2
+      assert(!falseBdd.strictEquals(BDD.False))
+      assert(falseBdd.equals(BDD.False))
+      assert(falseBdd.isFalse())
+    }
+
     it("should provide the correct string representation") { fixture =>
         assert(fixture.bdd1.toString() == "BDD(((x=1&(y=1|z=2))|(!x=1&z=2)))")
         assert(fixture.bdd2.toString() == "BDD((x=2&(y=2&z=1)))")
