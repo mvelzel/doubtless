@@ -18,17 +18,19 @@ object ProbCountUDAF extends Aggregator[BDD, List[BDD], List[BDD]] {
     val res =
       (agg(0) & ~inputBdd) :: agg
         .zipAll(agg.drop(1), null, null)
-        .map({ case (curBdd, nextBdd) =>
-          if (nextBdd == null)
-            curBdd & inputBdd
-          else
-            (curBdd & inputBdd) | (nextBdd & ~inputBdd)
+        .map({
+          case (null, null)      => null
+          case (null, nextBdd)   => nextBdd & ~inputBdd
+          case (curBdd, null)    => curBdd & inputBdd
+          case (curBdd, nextBdd) => (curBdd & inputBdd) | (nextBdd & ~inputBdd)
         })
 
     if (pruneMethod == "each-operation")
-      res.filter(bdd => !bdd.strictEquals(BDD.False))
+      res.map((bdd) =>
+        if (bdd == null || bdd.strictEquals(BDD.False)) null else bdd
+      )
     else if (pruneMethod == "each-step")
-      res.filter(bdd => !bdd.equals(BDD.False))
+      res.map((bdd) => if (bdd == null || bdd.equals(BDD.False)) null else bdd)
     else
       res
   }
@@ -44,10 +46,12 @@ object ProbCountUDAF extends Aggregator[BDD, List[BDD], List[BDD]] {
         (0 to count)
           .map(i =>
             otherAgg lift (i) match {
+              case Some(null) => BDD.False
               case Some(otherBdd) => {
                 agg lift (count - i) match {
-                  case Some(bdd) => bdd & otherBdd
-                  case None      => BDD.False
+                  case Some(null) => BDD.False
+                  case Some(bdd)  => bdd & otherBdd
+                  case None       => BDD.False
                 }
               }
               case None => BDD.False
@@ -57,9 +61,15 @@ object ProbCountUDAF extends Aggregator[BDD, List[BDD], List[BDD]] {
       )
 
     if (pruneMethod == "each-operation")
-      res.filter(bdd => !bdd.strictEquals(BDD.False)).toList
+      res
+        .map((bdd) =>
+          if (bdd == null || bdd.strictEquals(BDD.False)) null else bdd
+        )
+        .toList
     else if (pruneMethod == "each-step")
-      res.filter(bdd => !bdd.equals(BDD.False)).toList
+      res
+        .map((bdd) => if (bdd == null || bdd.equals(BDD.False)) null else bdd)
+        .toList
     else
       res.toList
   }

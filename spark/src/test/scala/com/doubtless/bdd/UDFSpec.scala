@@ -41,7 +41,7 @@ class UDFSpec
     originalProperties =
       sys.props.filter(tup => tup._1.startsWith(configPath)).toMap
 
-    sys.props += s"$configPath.aggregations.prune-method" -> "on-finish"
+    sys.props += s"$configPath.aggregations.prune-method" -> "each-operation"
 
     ConfigFactory.invalidateCaches()
   }
