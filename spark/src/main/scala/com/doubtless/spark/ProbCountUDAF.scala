@@ -5,14 +5,23 @@ import com.doubtless.bdd._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.Encoder
 import com.typesafe.config.{ConfigFactory}
+import java.io.File
 
 object ProbCountUDAF extends Aggregator[BDD, List[BDD], List[BDD]] {
-  val config =
-    ConfigFactory.load().getConfig("com.doubtless.spark.aggregations")
+  var pruneMethod: String = null
 
-  val pruneMethod = config.getString("prune-method")
+  def zero: List[BDD] = {
+    pruneMethod = ConfigFactory
+      .parseFile(
+        new File(
+          "/Users/mvelzel/doubtless/spark/src/main/resources/application.conf"
+        )
+      )
+      .getConfig("com.doubtless.spark.aggregations")
+      .getString("prune-method")
 
-  def zero: List[BDD] = List[BDD](BDD.True)
+    List[BDD](BDD.True)
+  }
 
   override def reduce(agg: List[BDD], inputBdd: BDD): List[BDD] = {
     val res =

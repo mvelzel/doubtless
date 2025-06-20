@@ -101,14 +101,30 @@ class HiveProbCountGenericUDAFEvaluator extends GenericUDAFEvaluator {
       loi.getList(partial).asInstanceOf[java.util.List[BytesWritable]]
 
     val rightConvAgg =
-      partialBddList.asScala.map(b => new BDD(b.getBytes())).toList
+      partialBddList.asScala
+        .map(b => {
+          if (b == null)
+            null
+          else
+            new BDD(b.getBytes())
+        })
+        .toList
 
     buffer.resultList = ProbCountUDAF
       .merge(buffer.resultList, rightConvAgg)
   }
 
   override def terminatePartial(agg: AggregationBuffer): AnyRef = {
-    terminate(agg)
+    val buffer = agg.asInstanceOf[ProbCountAggBuffer]
+
+    buffer.resultList
+      .map(bdd => {
+        if (bdd == null)
+          null
+        else
+          new BytesWritable(bdd.buffer)
+      })
+      .asJava
   }
 
   override def terminate(agg: AggregationBuffer): AnyRef = {
@@ -117,8 +133,14 @@ class HiveProbCountGenericUDAFEvaluator extends GenericUDAFEvaluator {
       return null
     }
 
-    buffer.resultList
-      .map(bdd => new BytesWritable(bdd.buffer))
+    ProbCountUDAF
+      .finish(buffer.resultList)
+      .map(bdd => {
+        if (bdd == null)
+          null
+        else
+          new BytesWritable(bdd.buffer)
+      })
       .asJava
   }
 }

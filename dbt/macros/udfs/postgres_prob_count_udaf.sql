@@ -41,6 +41,10 @@
                 execute format('insert into %I (count, sentence) values (0, ''1''::bdd)', results_table);
             end if;
 
+            if exists(select config from experiments.experiments_config where config['aggregations']['prune-method'] = 'on-finish') then
+                execute format('delete from %I where bdd_fast_equiv(sentence, bdd(''0''))', results_table)
+            end if;
+
             return results_table;
         end $$;
 
@@ -88,7 +92,9 @@
         return
         (
             select array_agg(row(x.cp1 - 1, x.bdd)::prob_count_record)
-            from unnest($1) with ordinality as x(bdd, cp1)
+            from unnest($1) with ordinality as x(bdd, cp1), experiments.experiments_config as config
+            where config['aggregations']['prune-method'] != 'on-finish'
+            or not bdd_fast_equiv(x.bdd, bdd('0'))
         );
 
     drop aggregate if exists prob_count (bdd);

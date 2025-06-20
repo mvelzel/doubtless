@@ -46,11 +46,23 @@
             from grouped_bdds bdds
         );
 
+    create or replace function prob_min_final_inmemory(prob_min_record[])
+        returns prob_min_record[]
+        immutable
+        language sql
+        return (
+            select array_agg(record)
+            from unnest($1) as record, experiments.experiments_config as config
+            where config['aggregations']['prune-method'] != 'on-finish'
+            or not bdd_fast_equiv(record.sentence, bdd('0'))
+        );
+
     drop aggregate if exists prob_min (float8, bdd);
     create aggregate prob_min (float8, bdd)
     (
         sfunc = prob_min_reduce_inmemory,
         stype = prob_min_record[],
+        finalfunc = prob_min_final_inmemory,
         initcond = '{"(,\"1\")"}'
     );
 {% endmacro %}

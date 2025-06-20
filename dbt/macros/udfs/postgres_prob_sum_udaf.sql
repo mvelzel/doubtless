@@ -43,6 +43,10 @@
                 execute format('insert into %I (sum, sentence) values (0.0, ''1''::bdd)', results_table);
             end if;
 
+            if exists(select config from experiments.experiments_config where config['aggregations']['prune-method'] = 'on-finish') then
+                execute format('delete from %I where bdd_fast_equiv(sentence, bdd(''0''))', results_table)
+            end if;
+
             return results_table;
         end $$;
     
@@ -90,11 +94,23 @@
             from grouped_bdds bdds
         );
 
+    create or replace function prob_sum_final_inmemory(prob_sum_record[])
+        returns prob_sum_record[]
+        immutable
+        language sql
+        return (
+            select array_agg(record)
+            from unnest($1) as record, experiments.experiments_config as config
+            where config['aggregations']['prune-method'] != 'on-finish'
+            or not bdd_fast_equiv(record.sentence, bdd('0'))
+        );
+
     drop aggregate if exists prob_sum (float8, bdd);
     create aggregate prob_sum (float8, bdd)
     (
         sfunc = prob_sum_reduce_inmemory,
         stype = prob_sum_record[],
+        finalfunc = prob_sum_final_inmemory,
         initcond = '{"(0.0, \"1\")"}'
     );
 {% endmacro %}

@@ -10,7 +10,8 @@
 
     {% if target.name == 'spark' %}
         select key as count
-        from grouped lateral view posexplode(map) explodeVal as key, value;
+        from grouped lateral view posexplode(map) explodeVal as key, value
+        where value is not null;
     {% elif target.name == 'postgres' %}
         select res.count from grouped
         left join lateral (

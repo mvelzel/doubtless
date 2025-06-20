@@ -57,7 +57,9 @@
                 then null
                 else record.sum / record.count
             end, record.sentence)::prob_avg_record)
-            from unnest($1) as record
+            from unnest($1) as record, experiments.experiments_config as config
+            where config['aggregations']['prune-method'] != 'on-finish'
+            or not bdd_fast_equiv(record.sentence, bdd('0'))
         );
 
     drop aggregate if exists prob_avg (float8, bdd);

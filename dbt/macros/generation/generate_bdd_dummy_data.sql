@@ -14,14 +14,6 @@
     {%- set var_name = 'g' ~ (i // variable_alternatives) -%}
     {% set alternative = '' ~ (i % variable_alternatives) %}
 
-    {%- set seed_sql -%}
-    select setseed({{ (start_seed + i / group_size) + (group * group_size) }})
-    {%- endset -%}
-
-    {%- if include_random_numbers and target.name == 'postgres' %}
-    {%- do run_query(seed_sql) -%}
-    {%- endif %}
-
     (
         '{{ experiment_name }}',
         {{ group }},

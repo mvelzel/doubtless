@@ -143,7 +143,21 @@ class HiveProbSumGenericUDAFEvaluator extends GenericUDAFEvaluator {
       .merge(buffer.resultList, rightConvAgg)
   }
 
-  override def terminatePartial(agg: AggregationBuffer): AnyRef = terminate(agg)
+  override def terminatePartial(agg: AggregationBuffer): AnyRef = {
+    val buffer = agg.asInstanceOf[ProbSumAggBuffer]
+
+    buffer.resultList
+      .map({
+        case (num, bdd) => {
+          val res = new ArrayList[AnyRef]()
+          res.add(new DoubleWritable(num))
+          res.add(new BytesWritable(bdd.buffer))
+
+          res
+        }
+      })
+      .asJava
+  }
 
   override def terminate(agg: AggregationBuffer): AnyRef = {
     val buffer = agg.asInstanceOf[ProbSumAggBuffer]
@@ -151,7 +165,8 @@ class HiveProbSumGenericUDAFEvaluator extends GenericUDAFEvaluator {
       return null
     }
 
-    buffer.resultList
+    ProbSumUDAF
+      .finish(buffer.resultList)
       .map({
         case (num, bdd) => {
           val res = new ArrayList[AnyRef]()
