@@ -18,7 +18,7 @@ lazy val root = (project in file("."))
       Seq(
         "-DCMAKE_BUILD_TYPE=Release",
         "-DSBT:BOOLEAN=true",
-        //"-DCMAKE_TOOLCHAIN_FILE=linux-toolchain.cmake"
+        "-DCMAKE_TOOLCHAIN_FILE=linux-toolchain.cmake"
       )
     ),
     javah / target := baseDirectory.value / "native" / "src",

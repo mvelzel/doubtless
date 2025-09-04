@@ -2,8 +2,8 @@
 
     {% set sql %}
     with grouped as (
-        {% if target.name == 'spark' %}
-        select prob_avg(cast(number as double), sentence) as map
+        {% if target.name == 'spark' or target.name == 'databricks' %}
+        select prob_avg(cast(number as double), sentence, '{{ var("prune_method") }}') as map
         {% else %}
         select prob_avg(number, sentence) as map
         {% endif %}
@@ -12,7 +12,7 @@
         group by group_index
     )
 
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         select record.avg as avg, record.bdd as sentence
         from grouped lateral view explode(map) explodeVal as record;
     {% elif target.name == 'postgres' %}

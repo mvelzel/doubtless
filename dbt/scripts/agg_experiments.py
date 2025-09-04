@@ -2,19 +2,17 @@ from dbt.cli.main import dbtRunner, dbtRunnerResult
 import matplotlib.ticker as mticker
 import os
 import hashlib
-import pathlib
 import numpy as np
+import yaml
 import matplotlib.pyplot as plt
 import json
-import contextlib
-import yaml
 import argparse
 from tqdm import tqdm
 from sklearn.model_selection import ParameterGrid
 import signal
 
 param_grid = {
-    "prune-method": ["none", "each-operation", "each-step", "on-finish"]
+    "prune_method": ["none", "each-operation", "each-step", "on-finish"]
 }
 
 experiments = {
@@ -23,9 +21,11 @@ experiments = {
         "experiment_names": [
             [
                 f"prob_count_{variables}_{alternatives}"
-                for alternatives in range(1, 13)
+                # for alternatives in range(1, 13)
+                for alternatives in range(1, 3)
             ]
-            for variables in range(1, 13)
+            # for variables in range(1, 13)
+            for variables in range(1, 3)
         ],
         "operation": "run_prob_count_experiment"
     },
@@ -34,9 +34,11 @@ experiments = {
         "experiment_names": [
             [
                 f"prob_sum_{variables}_{alternatives}"
-                for alternatives in range(1, 7)
+                # for alternatives in range(1, 7)
+                for alternatives in range(1, 3)
             ]
-            for variables in range(1, 7)
+            # for variables in range(1, 7)
+            for variables in range(1, 3)
         ],
         "operation": "run_prob_sum_experiment"
     },
@@ -45,9 +47,11 @@ experiments = {
         "experiment_names": [
             [
                 f"prob_min_{variables}_{alternatives}"
-                for alternatives in range(1, 26)
+                # for alternatives in range(1, 26)
+                for alternatives in range(1, 3)
             ]
-            for variables in range(1, 26)
+            # for variables in range(1, 26)
+            for variables in range(1, 3)
         ],
         "operation": "run_prob_min_experiment"
     },
@@ -56,9 +60,11 @@ experiments = {
         "experiment_names": [
             [
                 f"prob_max_{variables}_{alternatives}"
-                for alternatives in range(1, 26)
+                # for alternatives in range(1, 26)
+                for alternatives in range(1, 3)
             ]
-            for variables in range(1, 26)
+            # for variables in range(1, 26)
+            for variables in range(1, 3)
         ],
         "operation": "run_prob_max_experiment"
     },
@@ -67,9 +73,11 @@ experiments = {
         "experiment_names": [
             [
                 f"prob_avg_{variables}_{alternatives}"
-                for alternatives in range(1, 6)
+                # for alternatives in range(1, 6)
+                for alternatives in range(1, 3)
             ]
-            for variables in range(1, 6)
+            # for variables in range(1, 6)
+            for variables in range(1, 3)
         ],
         "operation": "run_prob_avg_experiment"
     },
@@ -82,12 +90,13 @@ def build_dataset(dbt, target, dataset):
     dbt.invoke(cli_args)
 
 
-def run_experiment(dbt, experiment_name, target, operation):
+def run_experiment(dbt, experiment_name, target, operation, config):
     cli_args = [
         "run-operation", operation,
         "--args", "{ experiment_name: " + experiment_name + " }",
         "--target", target,
-        "--quiet"
+        "--quiet",
+        "--vars", yaml.dump(config)
     ]
     res: dbtRunnerResult = dbt.invoke(cli_args)
 
@@ -100,7 +109,7 @@ def run_experiment(dbt, experiment_name, target, operation):
             raise Exception(f"Running experiment {experiment_name} failed.")
 
 
-def run_all_experiments(dbt, target, agg_name, test_run=False):
+def run_all_experiments(dbt, target, agg_name, config, test_run=False):
     experiment_names = experiments[agg_name]["experiment_names"]
     if test_run:
         experiment_names = [experiment_names[0]]
@@ -108,7 +117,7 @@ def run_all_experiments(dbt, target, agg_name, test_run=False):
     operation = experiments[agg_name]["operation"]
 
     # Warmup the database so the first experiment is not disproportionally long
-    run_experiment(dbt, experiment_names[0][0], target, operation)
+    run_experiment(dbt, experiment_names[0][0], target, operation, config)
 
     execution_times: list[float] = []
     for i, variables in enumerate(tqdm(experiment_names)):
@@ -120,7 +129,7 @@ def run_all_experiments(dbt, target, agg_name, test_run=False):
             time = float("nan")
             try:
                 time = float(run_experiment(
-                    dbt, name, target, operation
+                    dbt, name, target, operation, config
                 ))
             except Exception as e:
                 print(e)
@@ -134,71 +143,22 @@ def log_tick_formatter(val, pos=None):
     # return f"{10**val:.2e}"      # e-Notation
 
 
-def write_config(target, config_path, config):
-    if target == "spark":
-        new_config = {
-            "com": {
-                "doubtless": {
-                    "spark": config
-                }
-            }
-        }
-
-        with open(config_path, "w") as config_file:
-            json.dump(new_config, config_file, indent=4, sort_keys=True)
-    elif target == "postgres":
-        new_config = {
-            "config": config
-        }
-
-        cli_args = [
-            "run-operation", "set_config",
-            "--args", yaml.dump(new_config),
-            "--target", target,
-            "--quiet"
-        ]
-        dbt.invoke(cli_args)
+built_datasets = []
 
 
-def run_aggregation_experiments(args, dbt, agg_name):
+def run_aggregation_experiments(args, dbt, agg_name, config):
     agg_experiment_settings = experiments[agg_name]
 
-    print(f"Running experiments for {agg_name} aggregation.")
+    print(f"Running experiments for {
+          agg_name} aggregation with config: {config}.")
 
     target = args.target
 
-    if args.build_dataset:
+    if args.build_dataset \
+            and agg_experiment_settings["dataset"] not in built_datasets:
         print("Building dataset...")
         build_dataset(dbt, target, agg_experiment_settings["dataset"])
-
-    if target == "spark":
-        with contextlib.redirect_stdout(None):
-            cli_args = [
-                "show", "--inline", "select config()",
-                "--target", target,
-                "--quiet"
-            ]
-            config_res: dbtRunnerResult = dbt.invoke(cli_args)
-
-        config = json.loads(
-            config_res.result.results[0].agate_table.columns[0].values()[0]
-        )
-    elif target == "postgres":
-        with contextlib.redirect_stdout(None):
-            cli_args = [
-                "show",
-                "--inline", "select * from experiments.experiments_config",
-                "--target", target,
-                "--quiet"
-            ]
-            config_res: dbtRunnerResult = dbt.invoke(cli_args)
-
-        config = json.loads(
-            config_res.result.results[0].agate_table.columns[0].values()[0]
-        )
-
-    print("Current config:")
-    print(json.dumps(config, sort_keys=True, indent=4))
+        built_datasets.append(agg_experiment_settings["dataset"])
 
     hash = hashlib.md5(json.dumps(
         config, sort_keys=True).encode("utf-8")
@@ -212,7 +172,7 @@ def run_aggregation_experiments(args, dbt, agg_name):
         execution_times = np.load(f"{conf_dir}/execution_times.npy")
     else:
         execution_times = np.array(
-            run_all_experiments(dbt, target, agg_name, test_run)
+            run_all_experiments(dbt, target, agg_name, config, test_run)
         )
 
         if not test_run:
@@ -238,7 +198,7 @@ def run_aggregation_experiments(args, dbt, agg_name):
     X, Y = np.meshgrid(xrange, yrange)
 
     fig = plt.figure()
-    plt.title(f"{agg_name}\n{config['aggregations']['prune-method']}")
+    plt.title(f"{agg_name}\n{config['prune_method']}")
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(X, Y, np.log10(execution_times), cmap="viridis")
 
@@ -259,7 +219,7 @@ def run_aggregation_experiments(args, dbt, agg_name):
     flat_execution_times = execution_times.flatten()
 
     plt.figure()
-    plt.title(f"{agg_name}\n{config['aggregations']['prune-method']}")
+    plt.title(f"{agg_name}\n{config['prune_method']}")
     plt.xscale("log")
     plt.yscale("log")
     plt.scatter(world_counts, flat_execution_times)
@@ -300,7 +260,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--target",
         help="Against what database to run the experiments.",
-        choices=["spark", "postgres"],
+        choices=["spark", "postgres", "databricks"],
         default="spark"
     )
     parser.add_argument(
@@ -322,16 +282,12 @@ if __name__ == "__main__":
         choices=experiments.keys(),
         default=[]
     )
-
-    default_config_path = pathlib.Path(__file__).parent.parent.parent
-    default_config_path = default_config_path / "spark" / \
-        "src" / "main" / "resources" / "application.conf"
-    default_config_path = default_config_path.resolve()
-
     parser.add_argument(
-        "--config",
-        help="The location of the application.conf file",
-        default=default_config_path)
+        "--show-plots",
+        action=argparse.BooleanOptionalAction,
+        help="Whether to show the final experiment result plots.",
+        default=False
+    )
 
     args = parser.parse_args()
 
@@ -345,16 +301,18 @@ if __name__ == "__main__":
         experiment_names = args.experiments
 
     if args.all_parameters:
-        for config_values in params:
-            config = {
-                "aggregations": config_values
-            }
-            write_config(args.target, args.config, config)
-
+        for config in params:
             for agg_name in experiment_names:
-                run_aggregation_experiments(args, dbt, agg_name)
+                run_aggregation_experiments(args, dbt, agg_name, config)
+
+                if not args.show_plots:
+                    plt.close("all")
     else:
         for agg_name in experiment_names:
-            run_aggregation_experiments(args, dbt, agg_name)
+            run_aggregation_experiments(args, dbt, agg_name, params[0])
 
-    plt.show()
+            if not args.show_plots:
+                plt.close("all")
+
+    if args.show_plots:
+        plt.show()

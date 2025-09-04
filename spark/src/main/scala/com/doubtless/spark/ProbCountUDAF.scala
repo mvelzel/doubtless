@@ -4,7 +4,6 @@ import org.apache.spark.sql.expressions.Aggregator
 import com.doubtless.bdd._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.Encoder
-import com.typesafe.config.{ConfigFactory}
 import java.io.File
 
 object ProbCountUDAF

@@ -2,13 +2,13 @@
 
     {% set sql %}
     with grouped as (
-        select prob_count(sentence) as map
+        select prob_count(sentence, '{{ var("prune_method") }}') as map
         from experiments.probabilistic_count_dataset
         where experiment_name = '{{ experiment_name }}'
         group by group_index
     )
 
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         select key as count
         from grouped lateral view posexplode(map) explodeVal as key, value
         where value is not null;
