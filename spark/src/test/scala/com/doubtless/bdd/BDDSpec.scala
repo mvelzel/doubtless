@@ -1,7 +1,9 @@
 import org.scalatest.funspec.FixtureAnyFunSpec
+import org.scalatest.BeforeAndAfterEach
+import com.typesafe.config.ConfigFactory
 import com.doubtless.bdd._
 
-class BDDSpec extends FixtureAnyFunSpec {
+class BDDSpec extends FixtureAnyFunSpec with BeforeAndAfterEach {
   case class FixtureParam(bdd1: BDD, bdd2: BDD, dict: ProbDict)
 
   override def withFixture(test: OneArgTest) = {
@@ -18,6 +20,29 @@ class BDDSpec extends FixtureAnyFunSpec {
       )
     )
     test(fixture)
+  }
+
+  val configPath = "com.doubtless.spark";
+  var originalProperties: Map[String, String] = Map()
+  override def beforeEach() = {
+    originalProperties =
+      sys.props.filter(tup => tup._1.startsWith(configPath)).toMap
+
+    sys.props += s"$configPath.aggregations.prune-method" -> "each-operation"
+
+    ConfigFactory.invalidateCaches()
+  }
+
+  override def afterEach() = {
+    originalProperties.foreach { case (k, v) =>
+      sys.props.update(k, v)
+    }
+
+    val testProps =
+      sys.props.filter(tup => tup._1.startsWith(configPath)).keySet
+    testProps.diff(originalProperties.keySet).foreach(sys.props.remove)
+
+    ConfigFactory.invalidateCaches()
   }
 
   describe("A BDD") {

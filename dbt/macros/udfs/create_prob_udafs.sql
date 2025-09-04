@@ -1,6 +1,6 @@
 {% macro create_consume_prob_agg_functions() %}
 
-    {%- if target.name == 'spark' -%}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         select 1;
     {%- elif target.name == 'postgres' -%}
         create or replace function consume_prob_agg_results_inmemory(anyarray)
@@ -28,7 +28,7 @@
 
 {% macro consume_prob_agg_results(field) %}
 
-    {%- if target.name == 'spark' -%}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         select 1;
     {%- elif target.name == 'postgres' -%}
         {%- if var('postgres_prob_agg_type') == 'inmemory' -%}
@@ -42,7 +42,7 @@
 
 {% macro create_prob_count_udaf() %}
 
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         create or replace function prob_count as 'com.doubtless.spark.hive.HiveProbCountGenericUDAF';
     {%- elif target.name == 'postgres' -%}
         {%- if var('postgres_prob_agg_type') == 'inmemory' -%}
@@ -56,9 +56,9 @@
 
 {% macro create_prob_sum_udaf() %}
 
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         create or replace function prob_sum as 'com.doubtless.spark.hive.HiveProbSumGenericUDAF';
-    {% else %}
+    {% elif target.name == 'postgres' %}
         {%- if var('postgres_prob_agg_type') == 'inmemory' -%}
             {{ create_postgres_prob_sum_inmemory() }}
         {%- elif var('postgres_prob_agg_type') == 'temptable' -%}
@@ -70,9 +70,9 @@
 
 {% macro create_prob_min_udaf() %}
 
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         create or replace function prob_min as 'com.doubtless.spark.hive.HiveProbMinGenericUDAF';
-    {% else %}
+    {% elif target.name == 'postgres' %}
         {%- if var('postgres_prob_agg_type') == 'inmemory' -%}
             {{ create_postgres_prob_min_inmemory() }}
         {%- elif var('postgres_prob_agg_type') == 'temptable' -%}
@@ -84,9 +84,9 @@
 
 {% macro create_prob_max_udaf() %}
 
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         create or replace function prob_max as 'com.doubtless.spark.hive.HiveProbMaxGenericUDAF';
-    {% else %}
+    {% elif target.name == 'postgres' %}
         {%- if var('postgres_prob_agg_type') == 'inmemory' -%}
             {{ create_postgres_prob_max_inmemory() }}
         {%- elif var('postgres_prob_agg_type') == 'temptable' -%}
@@ -98,9 +98,9 @@
 
 {% macro create_prob_avg_udaf() %}
 
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         create or replace function prob_avg as 'com.doubtless.spark.hive.HiveProbAvgGenericUDAF';
-    {% else %}
+    {% elif target.name == 'postgres' %}
         {%- if var('postgres_prob_agg_type') == 'inmemory' -%}
             {{ create_postgres_prob_avg_inmemory() }}
         {%- elif var('postgres_prob_agg_type') == 'temptable' -%}

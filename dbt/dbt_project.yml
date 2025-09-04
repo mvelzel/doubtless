@@ -27,7 +27,7 @@ vars:
 
 on-run-start:
   # Create all UDFs
-  - '{{ create_config_udf() }}'
+  #- '{{ create_config_udf() }}'
   - '{{ create_bdd_udf() }}'
   - '{{ create_bdd_to_string_udf() }}'
   - '{{ create_bdd_and_udf() }}'

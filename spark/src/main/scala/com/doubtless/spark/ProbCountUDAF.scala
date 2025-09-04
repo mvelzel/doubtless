@@ -7,47 +7,60 @@ import org.apache.spark.sql.Encoder
 import com.typesafe.config.{ConfigFactory}
 import java.io.File
 
-object ProbCountUDAF extends Aggregator[BDD, List[BDD], List[BDD]] {
-  var pruneMethod: String = null
-
-  def zero: List[BDD] = {
-    pruneMethod = ConfigFactory
-      .parseFile(
-        new File(
-          "/Users/mvelzel/doubtless/spark/src/main/resources/application.conf"
-        )
-      )
-      .getConfig("com.doubtless.spark.aggregations")
-      .getString("prune-method")
-
-    List[BDD](BDD.True)
+object ProbCountUDAF
+    extends Aggregator[(BDD, String), List[(BDD, String)], List[BDD]] {
+  def zero: List[(BDD, String)] = {
+    List[(BDD, String)]((BDD.True, null))
   }
 
-  override def reduce(agg: List[BDD], inputBdd: BDD): List[BDD] = {
+  override def reduce(
+      agg: List[(BDD, String)],
+      a: (BDD, String)
+  ): List[(BDD, String)] = {
+    val pruneMethod = a._2
+    val inputBdd = a._1
+
+    val newZero =
+      if (pruneMethod == "each-operation") agg(0)._1 &! ~inputBdd
+      else agg(0)._1 & ~inputBdd
+
     val res =
-      (agg(0) & ~inputBdd) :: agg
-        .zipAll(agg.drop(1), null, null)
+      newZero :: agg
+        .zipAll(agg.drop(1), (null, pruneMethod), (null, pruneMethod))
         .map({
-          case (null, null)      => null
-          case (null, nextBdd)   => nextBdd & ~inputBdd
-          case (curBdd, null)    => curBdd & inputBdd
-          case (curBdd, nextBdd) => (curBdd & inputBdd) | (nextBdd & ~inputBdd)
+          case ((null, _), (null, _)) => null
+          case ((null, _), (nextBdd, _)) =>
+            if (pruneMethod == "each-operation") nextBdd &! ~inputBdd
+            else nextBdd & ~inputBdd
+          case ((curBdd, _), (null, _)) =>
+            if (pruneMethod == "each-operation") curBdd &! inputBdd
+            else curBdd & inputBdd
+          case ((curBdd, _), (nextBdd, _)) =>
+            if (pruneMethod == "each-operation")
+              (curBdd &! inputBdd) | (nextBdd &! ~inputBdd)
+            else (curBdd & inputBdd) | (nextBdd & ~inputBdd)
         })
 
     if (pruneMethod == "each-operation")
-      res.map((bdd) =>
-        if (bdd == null || bdd.strictEquals(BDD.False)) null else bdd
+      res.map(bdd =>
+        if (bdd == null || bdd.strictEquals(BDD.False)) (null, pruneMethod)
+        else (bdd, pruneMethod)
       )
     else if (pruneMethod == "each-step")
-      res.map((bdd) => if (bdd == null || bdd.equals(BDD.False)) null else bdd)
+      res.map((bdd) =>
+        if (bdd == null || bdd.equals(BDD.False)) (null, pruneMethod)
+        else (bdd, pruneMethod)
+      )
     else
-      res
+      res.map(bdd => (bdd, pruneMethod))
   }
 
   override def merge(
-      agg: List[BDD],
-      otherAgg: List[BDD]
-  ): List[BDD] = {
+      agg: List[(BDD, String)],
+      otherAgg: List[(BDD, String)]
+  ): List[(BDD, String)] = {
+    val pruneMethod = if (agg(0)._2 != null) agg(0)._2 else otherAgg(0)._2
+
     val totalMax = agg.length - 1 + otherAgg.length - 1
 
     val res = (0 to totalMax)
@@ -55,12 +68,14 @@ object ProbCountUDAF extends Aggregator[BDD, List[BDD], List[BDD]] {
         (0 to count)
           .map(i =>
             otherAgg lift (i) match {
-              case Some(null) => BDD.False
-              case Some(otherBdd) => {
+              case Some((null, _)) => BDD.False
+              case Some((otherBdd, _)) => {
                 agg lift (count - i) match {
-                  case Some(null) => BDD.False
-                  case Some(bdd)  => bdd & otherBdd
-                  case None       => BDD.False
+                  case Some((null, _)) => BDD.False
+                  case Some((bdd, _)) =>
+                    if (pruneMethod == "each-operation") bdd &! otherBdd
+                    else bdd & otherBdd
+                  case None => BDD.False
                 }
               }
               case None => BDD.False
@@ -72,25 +87,31 @@ object ProbCountUDAF extends Aggregator[BDD, List[BDD], List[BDD]] {
     if (pruneMethod == "each-operation")
       res
         .map((bdd) =>
-          if (bdd == null || bdd.strictEquals(BDD.False)) null else bdd
+          if (bdd == null || bdd.strictEquals(BDD.False)) (null, pruneMethod)
+          else (bdd, pruneMethod)
         )
         .toList
     else if (pruneMethod == "each-step")
       res
-        .map((bdd) => if (bdd == null || bdd.equals(BDD.False)) null else bdd)
+        .map((bdd) =>
+          if (bdd == null || bdd.equals(BDD.False)) (null, pruneMethod)
+          else (bdd, pruneMethod)
+        )
         .toList
     else
-      res.toList
+      res.map(bdd => (bdd, pruneMethod)).toList
   }
 
-  override def finish(reduction: List[BDD]): List[BDD] = {
+  override def finish(reduction: List[(BDD, String)]): List[BDD] = {
+    val pruneMethod = reduction(0)._2
+
     if (pruneMethod == "on-finish")
-      reduction.map((bdd) => if (bdd.equals(BDD.False)) null else bdd)
+      reduction.map((tup) => if (tup._1.equals(BDD.False)) null else tup._1)
     else
-      reduction
+      reduction.map(tup => tup._1)
   }
 
-  def bufferEncoder: Encoder[List[BDD]] = ExpressionEncoder()
+  def bufferEncoder: Encoder[List[(BDD, String)]] = ExpressionEncoder()
 
   def outputEncoder: Encoder[List[BDD]] = ExpressionEncoder()
 }

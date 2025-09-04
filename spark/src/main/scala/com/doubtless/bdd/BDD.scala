@@ -2,38 +2,19 @@ package com.doubtless.bdd
 
 import com.doubtless.spark.BDDUDT
 import org.apache.spark.sql.types.SQLUserDefinedType
-import com.typesafe.config.ConfigFactory
 import java.io.File
 
 @SQLUserDefinedType(udt = classOf[BDDUDT])
 class BDD(val buffer: Array[Byte]) extends Serializable {
-  val config = ConfigFactory
-    .parseFile(
-      new File(
-        "/Users/mvelzel/doubtless/spark/src/main/resources/application.conf"
-      )
-    )
-    .getConfig("com.doubtless.spark.aggregations")
-
-  val pruneMethod = config.getString("prune-method")
-
   def |(that: BDD) = {
-    // if (this.strictEquals(BDD.False))
-    //  that
-    // else if (that.strictEquals(BDD.False))
-    //  this
-    // else
     new BDD(Native.bddOperator("|", buffer, that.buffer))
   }
 
-  def &(that: BDD) = {
-    // if (this.strictEquals(BDD.True))
-    //  that
-    // else if (that.strictEquals(BDD.True))
-    //  this
-    // else
-    val newBdd = new BDD(Native.bddOperator("&", buffer, that.buffer))
-    if (pruneMethod == "each-operation" && newBdd.equals(BDD.False))
+  def &(that: BDD) = new BDD(Native.bddOperator("&", buffer, that.buffer))
+
+  def &!(that: BDD) = {
+    val newBdd = this & that
+    if (newBdd.equals(BDD.False))
       BDD.False
     else
       newBdd

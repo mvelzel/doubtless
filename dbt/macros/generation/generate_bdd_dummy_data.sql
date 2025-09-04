@@ -18,7 +18,7 @@
         '{{ experiment_name }}',
         {{ group }},
         {% if include_random_numbers -%}
-        {{ (range(100) | random) / 100 }},
+        cast({{ (range(100) | random) / 100 }} as double),
         {% endif -%}
         {% if i >= group_variables * variable_alternatives -%}
         bdd('g1=0'),

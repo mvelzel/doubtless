@@ -8,15 +8,8 @@ import java.io.File
 
 class HiveConfig extends UDF {
   def evaluate(): String = {
-    val config =
-      ConfigFactory
-        .parseFile(
-          new File(
-            "/Users/mvelzel/doubtless/spark/src/main/resources/application.conf"
-          )
-        )
-        .getConfig("com.doubtless.spark")
+    val config = ConfigFactory.load().getConfig("com.doubtless.spark")
 
-      config.root().render(ConfigRenderOptions.concise())
+    config.root().render(ConfigRenderOptions.concise())
   }
 }

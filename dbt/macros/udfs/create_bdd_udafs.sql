@@ -1,6 +1,6 @@
 {% macro create_bdd_agg_and_udaf() %}
     
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         create or replace function bdd_agg_and as 'com.doubtless.spark.hive.HiveBDDAggAndUDAF';
     {% else %}
         select 1;
@@ -10,7 +10,7 @@
 
 {% macro create_bdd_agg_or_udaf() %}
 
-    {% if target.name == 'spark' %}
+    {% if target.name == 'spark' or target.name == 'databricks' %}
         create or replace function bdd_agg_or as 'com.doubtless.spark.hive.HiveBDDAggOrUDAF';
     {% else %}
         select 1;

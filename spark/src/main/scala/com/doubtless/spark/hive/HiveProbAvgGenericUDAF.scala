@@ -9,7 +9,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.{
   Mode
 }
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator
-import org.apache.hadoop.io.{DoubleWritable, BytesWritable, IntWritable}
+import org.apache.hadoop.io.{DoubleWritable, BytesWritable, IntWritable, Text}
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.{
   PrimitiveObjectInspectorFactory,
   DoubleObjectInspector,
@@ -26,22 +26,24 @@ import org.apache.hadoop.hive.ql.udf.generic.{
   GenericUDAFEvaluator,
   GenericUDAFParameterInfo
 }
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector
 
 class ProbAvgAggBuffer extends AbstractAggregationBuffer {
-  var resultList: List[(Int, Double, BDD)] = _
+  var resultList: List[(Int, Double, BDD, String)] = _
 }
 
 class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
   // Input ObjectInspectors
   private var inputAvgOI: DoubleObjectInspector = _
   private var inputBddOI: BinaryObjectInspector = _
+  private var inputPruneMethodOI: StringObjectInspector = _
 
   // For PARTIAL2 and FINAL: ObjectInspectors for partial aggregations
   private var loi: ListObjectInspector = _;
 
   // Output ObjectInspectors
   private val partialStructFieldNames: java.util.List[String] =
-    java.util.List.of("count", "sum", "bdd")
+    java.util.List.of("count", "sum", "bdd", "pruneMethod")
   private val structFieldNames: java.util.List[String] =
     java.util.List.of("avg", "bdd")
 
@@ -52,9 +54,9 @@ class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
     super.init(mode, parameters)
 
     if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
-      if (parameters.length != 2) {
+      if (parameters.length != 3) {
         throw new UDFArgumentException(
-          "prob_avg requires 2 arguments (double, binary)"
+          "prob_avg requires 3 arguments (double, binary, pruneMethod)"
         )
       }
 
@@ -68,6 +70,14 @@ class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
         case oi: BinaryObjectInspector => inputBddOI = oi
         case _ =>
           throw new UDFArgumentException("Argument 2 (bdd) must be binary")
+      }
+
+      parameters(2) match {
+        case oi: StringObjectInspector => inputPruneMethodOI = oi
+        case _ =>
+          throw new UDFArgumentException(
+            "Argument 3 (pruneMethod) must be a string"
+          )
       }
     } else {
       parameters(0) match {
@@ -87,6 +97,9 @@ class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
       )
       outputStructFieldOIs.add(
         PrimitiveObjectInspectorFactory.writableBinaryObjectInspector
+      )
+      outputStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableStringObjectInspector
       )
       val partialOutputStructOI = ObjectInspectorFactory
         .getStandardStructObjectInspector(
@@ -132,9 +145,9 @@ class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
       parameters: Array[Object]
   ): Unit = {
     if (
-      parameters == null || parameters.length != 2 || parameters(
+      parameters == null || parameters.length != 3 || parameters(
         0
-      ) == null || parameters(1) == null
+      ) == null || parameters(1) == null || parameters(2) == null
     ) {
       return
     }
@@ -143,11 +156,13 @@ class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
     val avgVal =
       PrimitiveObjectInspectorUtils.getDouble(parameters(0), inputAvgOI);
     val bddVal = inputBddOI.getPrimitiveWritableObject(parameters(1))
+    val pruneMethodVal =
+      PrimitiveObjectInspectorUtils.getString(parameters(2), inputPruneMethodOI)
 
     val inputBdd = new BDD(bddVal.getBytes())
 
     buffer.resultList =
-      ProbAvgUDAF.reduce(buffer.resultList, (avgVal, inputBdd))
+      ProbAvgUDAF.reduce(buffer.resultList, (avgVal, inputBdd, pruneMethodVal))
   }
 
   override def merge(agg: AggregationBuffer, partial: Object): Unit = {
@@ -158,13 +173,16 @@ class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
       loi.getList(partial).asInstanceOf[java.util.List[ArrayList[AnyRef]]]
 
     val rightConvAgg = partialStructList.asScala
-      .map(b =>
+      .map(b => {
+        val pruneMethod = b.get(3)
         (
           b.get(0).asInstanceOf[IntWritable].get(),
           b.get(1).asInstanceOf[DoubleWritable].get(),
-          new BDD(b.get(2).asInstanceOf[BytesWritable].getBytes())
+          new BDD(b.get(2).asInstanceOf[BytesWritable].getBytes()),
+          if (pruneMethod == null) null
+          else pruneMethod.asInstanceOf[Text].toString()
         )
-      )
+      })
       .toList
 
     buffer.resultList = ProbAvgUDAF
@@ -176,11 +194,12 @@ class HiveProbAvgGenericUDAFEvaluator extends GenericUDAFEvaluator {
 
     buffer.resultList
       .map({
-        case (count, sum, bdd) => {
+        case (count, sum, bdd, pruneMethod) => {
           val res = new ArrayList[AnyRef]()
           res.add(new IntWritable(count))
           res.add(new DoubleWritable(sum))
           res.add(new BytesWritable(bdd.buffer))
+          res.add(if (pruneMethod == null) null else new Text(pruneMethod))
 
           res
         }
@@ -219,8 +238,8 @@ class HiveProbAvgGenericUDAF extends AbstractGenericUDAFResolver {
   override def getEvaluator(
       parameters: Array[TypeInfo]
   ): GenericUDAFEvaluator = {
-    if (parameters.length != 2) {
-      throw new UDFArgumentException("prob_avg requires 2 arguments")
+    if (parameters.length != 3) {
+      throw new UDFArgumentException("prob_avg requires 3 arguments")
     }
     // Add more specific TypeInfo checks for DOUBLE and BINARY if desired
     new HiveProbAvgGenericUDAFEvaluator()
@@ -231,9 +250,9 @@ class HiveProbAvgGenericUDAF extends AbstractGenericUDAFResolver {
       info: GenericUDAFParameterInfo
   ): GenericUDAFEvaluator = {
     val parameters: Array[ObjectInspector] = info.getParameterObjectInspectors()
-    if (parameters.length != 2) {
+    if (parameters.length != 3) {
       throw new UDFArgumentException(
-        "prob_avg requires 2 arguments (from GenericUDAFParameterInfo)"
+        "prob_avg requires 3 arguments (from GenericUDAFParameterInfo)"
       )
     }
     // Can add specific ObjectInspector checks here

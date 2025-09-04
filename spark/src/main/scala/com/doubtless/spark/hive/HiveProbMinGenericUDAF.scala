@@ -9,7 +9,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.{
   Mode
 }
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator
-import org.apache.hadoop.io.{DoubleWritable, BytesWritable}
+import org.apache.hadoop.io.{DoubleWritable, BytesWritable, Text}
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.{
   PrimitiveObjectInspectorFactory,
   DoubleObjectInspector,
@@ -26,21 +26,25 @@ import org.apache.hadoop.hive.ql.udf.generic.{
   GenericUDAFEvaluator,
   GenericUDAFParameterInfo
 }
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.StringObjectInspector
 
 class ProbMinAggBuffer extends AbstractAggregationBuffer {
-  var resultList: List[(Option[Double], BDD)] = _
+  var resultList: List[(Option[Double], BDD, String)] = _
 }
 
 class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
   // Input ObjectInspectors
   private var inputMinOI: DoubleObjectInspector = _
   private var inputBddOI: BinaryObjectInspector = _
+  private var inputPruneMethodOI: StringObjectInspector = _
 
   // For PARTIAL2 and FINAL: ObjectInspectors for partial aggregations
   private var loi: ListObjectInspector = _;
 
-  // Output ObjectInspectors
-  private val structFieldNames: java.util.List[String] =
+  private val interStructFieldNames: java.util.List[String] =
+    java.util.List.of("min", "bdd", "pruneMethod")
+
+  private val outputStructFieldNames: java.util.List[String] =
     java.util.List.of("min", "bdd")
 
   override def init(
@@ -50,9 +54,9 @@ class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
     super.init(mode, parameters)
 
     if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
-      if (parameters.length != 2) {
+      if (parameters.length != 3) {
         throw new UDFArgumentException(
-          "prob_min requires 2 arguments (double, binary)"
+          "prob_min requires 3 arguments (double, binary, string)"
         )
       }
 
@@ -67,6 +71,14 @@ class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
         case _ =>
           throw new UDFArgumentException("Argument 2 (bdd) must be binary")
       }
+
+      parameters(2) match {
+        case oi: StringObjectInspector => inputPruneMethodOI = oi
+        case _ =>
+          throw new UDFArgumentException(
+            "Argument 3 (pruneMethod) must be a string"
+          )
+      }
     } else {
       parameters(0) match {
         case oi: ListObjectInspector => loi = oi
@@ -75,19 +87,44 @@ class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
       }
     }
 
-    val outputStructFieldOIs = new ArrayList[ObjectInspector]()
-    outputStructFieldOIs.add(
-      PrimitiveObjectInspectorFactory.writableDoubleObjectInspector
-    )
-    outputStructFieldOIs.add(
-      PrimitiveObjectInspectorFactory.writableBinaryObjectInspector
-    )
-    val finalOutputStructOI = ObjectInspectorFactory
-      .getStandardStructObjectInspector(structFieldNames, outputStructFieldOIs)
+    if (mode == Mode.PARTIAL1 || mode == Mode.PARTIAL2) {
+      val interStructFieldOIs = new ArrayList[ObjectInspector]()
+      interStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector
+      )
+      interStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableBinaryObjectInspector
+      )
+      interStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableStringObjectInspector
+      )
+      val interOutputStructOI = ObjectInspectorFactory
+        .getStandardStructObjectInspector(
+          interStructFieldNames,
+          interStructFieldOIs
+        )
 
-    return ObjectInspectorFactory.getStandardListObjectInspector(
-      finalOutputStructOI
-    )
+      return ObjectInspectorFactory.getStandardListObjectInspector(
+        interOutputStructOI
+      )
+    } else {
+      val outputStructFieldOIs = new ArrayList[ObjectInspector]()
+      outputStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector
+      )
+      outputStructFieldOIs.add(
+        PrimitiveObjectInspectorFactory.writableBinaryObjectInspector
+      )
+      val finalOutputStructOI = ObjectInspectorFactory
+        .getStandardStructObjectInspector(
+          outputStructFieldNames,
+          outputStructFieldOIs
+        )
+
+      return ObjectInspectorFactory.getStandardListObjectInspector(
+        finalOutputStructOI
+      )
+    }
   }
 
   override def getNewAggregationBuffer(): AggregationBuffer = {
@@ -105,9 +142,9 @@ class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
       parameters: Array[Object]
   ): Unit = {
     if (
-      parameters == null || parameters.length != 2 || parameters(
+      parameters == null || parameters.length != 3 || parameters(
         0
-      ) == null || parameters(1) == null
+      ) == null || parameters(1) == null || parameters(2) == null
     ) {
       return
     }
@@ -116,11 +153,15 @@ class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
     val minVal =
       PrimitiveObjectInspectorUtils.getDouble(parameters(0), inputMinOI);
     val bddVal = inputBddOI.getPrimitiveWritableObject(parameters(1))
+    val pruneMethodVal =
+      PrimitiveObjectInspectorUtils.getString(parameters(2), inputPruneMethodOI)
 
     val inputBdd = new BDD(bddVal.getBytes())
 
-    buffer.resultList =
-      ProbMinUDAF.reduce(buffer.resultList, (Option(minVal), inputBdd))
+    buffer.resultList = ProbMinUDAF.reduce(
+      buffer.resultList,
+      (Option(minVal), inputBdd, pruneMethodVal)
+    )
   }
 
   override def merge(agg: AggregationBuffer, partial: Object): Unit = {
@@ -131,12 +172,15 @@ class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
       loi.getList(partial).asInstanceOf[java.util.List[ArrayList[AnyRef]]]
 
     val rightConvAgg = partialStructList.asScala
-      .map(b =>
+      .map(b => {
+        val pruneMethod = b.get(2)
         (
           Option(b.get(0).asInstanceOf[DoubleWritable]).map(d => d.get()),
-          new BDD(b.get(1).asInstanceOf[BytesWritable].getBytes())
+          new BDD(b.get(1).asInstanceOf[BytesWritable].getBytes()),
+          if (pruneMethod == null) null
+          else pruneMethod.asInstanceOf[Text].toString()
         )
-      )
+      })
       .toList
 
     buffer.resultList = ProbMinUDAF
@@ -148,7 +192,7 @@ class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
 
     buffer.resultList
       .map({
-        case (numOpt, bdd) => {
+        case (numOpt, bdd, pruneMethod) => {
           val number: DoubleWritable = numOpt match {
             case Some(num) => new DoubleWritable(num)
             case None      => null
@@ -157,6 +201,7 @@ class HiveProbMinGenericUDAFEvaluator extends GenericUDAFEvaluator {
           val res = new ArrayList[AnyRef]()
           res.add(number)
           res.add(new BytesWritable(bdd.buffer))
+          res.add(if (pruneMethod == null) null else new Text(pruneMethod))
 
           res
         }
@@ -195,10 +240,10 @@ class HiveProbMinGenericUDAF extends AbstractGenericUDAFResolver {
   override def getEvaluator(
       parameters: Array[TypeInfo]
   ): GenericUDAFEvaluator = {
-    if (parameters.length != 2) {
-      throw new UDFArgumentException("prob_min requires 2 arguments")
+    if (parameters.length != 3) {
+      throw new UDFArgumentException("prob_min requires 3 arguments")
     }
-    // Add more specific TypeInfo checks for DOUBLE and BINARY if desired
+
     new HiveProbMinGenericUDAFEvaluator()
   }
 
@@ -207,12 +252,12 @@ class HiveProbMinGenericUDAF extends AbstractGenericUDAFResolver {
       info: GenericUDAFParameterInfo
   ): GenericUDAFEvaluator = {
     val parameters: Array[ObjectInspector] = info.getParameterObjectInspectors()
-    if (parameters.length != 2) {
+    if (parameters.length != 3) {
       throw new UDFArgumentException(
-        "prob_min requires 2 arguments (from GenericUDAFParameterInfo)"
+        "prob_min requires 3 arguments (from GenericUDAFParameterInfo)"
       )
     }
-    // Can add specific ObjectInspector checks here
+
     new HiveProbMinGenericUDAFEvaluator()
   }
 }
