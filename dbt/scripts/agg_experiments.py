@@ -22,10 +22,12 @@ experiments = {
             [
                 f"prob_count_{variables}_{alternatives}"
                 # for alternatives in range(1, 13)
-                for alternatives in range(1, 3)
+                # for alternatives in range(1, 3)
+                for alternatives in range(1, 20)
             ]
             # for variables in range(1, 13)
-            for variables in range(1, 3)
+            # for variables in range(1, 3)
+            for variables in range(1, 20)
         ],
         "operation": "run_prob_count_experiment"
     },
@@ -35,10 +37,12 @@ experiments = {
             [
                 f"prob_sum_{variables}_{alternatives}"
                 # for alternatives in range(1, 7)
-                for alternatives in range(1, 3)
+                # for alternatives in range(1, 3)
+                for alternatives in range(1, 10)
             ]
             # for variables in range(1, 7)
-            for variables in range(1, 3)
+            # for variables in range(1, 3)
+            for variables in range(1, 10)
         ],
         "operation": "run_prob_sum_experiment"
     },
@@ -48,10 +52,12 @@ experiments = {
             [
                 f"prob_min_{variables}_{alternatives}"
                 # for alternatives in range(1, 26)
-                for alternatives in range(1, 3)
+                # for alternatives in range(1, 3)
+                for alternatives in range(1, 30)
             ]
             # for variables in range(1, 26)
-            for variables in range(1, 3)
+            # for variables in range(1, 3)
+            for variables in range(1, 30)
         ],
         "operation": "run_prob_min_experiment"
     },
@@ -61,10 +67,12 @@ experiments = {
             [
                 f"prob_max_{variables}_{alternatives}"
                 # for alternatives in range(1, 26)
-                for alternatives in range(1, 3)
+                # for alternatives in range(1, 3)
+                for alternatives in range(1, 30)
             ]
             # for variables in range(1, 26)
-            for variables in range(1, 3)
+            # for variables in range(1, 3)
+            for variables in range(1, 30)
         ],
         "operation": "run_prob_max_experiment"
     },
@@ -74,10 +82,12 @@ experiments = {
             [
                 f"prob_avg_{variables}_{alternatives}"
                 # for alternatives in range(1, 6)
-                for alternatives in range(1, 3)
+                # for alternatives in range(1, 3)
+                for alternatives in range(1, 10)
             ]
             # for variables in range(1, 6)
-            for variables in range(1, 3)
+            # for variables in range(1, 3)
+            for variables in range(1, 10)
         ],
         "operation": "run_prob_avg_experiment"
     },
