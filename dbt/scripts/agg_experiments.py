@@ -23,11 +23,11 @@ experiments = {
                 f"prob_count_{variables}_{alternatives}"
                 # for alternatives in range(1, 13)
                 # for alternatives in range(1, 3)
-                for alternatives in range(1, 20)
+                for alternatives in range(1, 15)
             ]
             # for variables in range(1, 13)
             # for variables in range(1, 3)
-            for variables in range(1, 20)
+            for variables in range(1, 15)
         ],
         "operation": "run_prob_count_experiment"
     },
@@ -119,7 +119,28 @@ def run_experiment(dbt, experiment_name, target, operation, config):
             raise Exception(f"Running experiment {experiment_name} failed.")
 
 
+def write_execution_times(execution_times, target, agg_name, hash):
+    conf_dir = f"experiment_results/{target}/{agg_name}/{hash}"
+
+    if not os.path.isdir(f"experiment_results/{target}"):
+        os.mkdir(f"experiment_results/{target}")
+    if not os.path.isdir(f"experiment_results/{target}/{agg_name}"):
+        os.mkdir(f"experiment_results/{target}/{agg_name}")
+    if not os.path.isdir(
+        f"experiment_results/{target}/{agg_name}/{hash}"
+    ):
+        os.mkdir(f"experiment_results/{target}/{agg_name}/{hash}")
+
+    with open(f"{conf_dir}/config.json", "w") as f:
+        json.dump(config, f)
+    np.save(f"{conf_dir}/execution_times.npy", execution_times)
+
+
 def run_all_experiments(dbt, target, agg_name, config, test_run=False):
+    hash = hashlib.md5(json.dumps(
+        config, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
     experiment_names = experiments[agg_name]["experiment_names"]
     if test_run:
         experiment_names = [experiment_names[0]]
@@ -144,6 +165,9 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
             except Exception as e:
                 print(e)
             execution_times[i].append(time)
+
+        if not test_run:
+            write_execution_times(execution_times, target, agg_name, hash)
 
     return execution_times
 
@@ -186,18 +210,7 @@ def run_aggregation_experiments(args, dbt, agg_name, config):
         )
 
         if not test_run:
-            if not os.path.isdir(f"experiment_results/{target}"):
-                os.mkdir(f"experiment_results/{target}")
-            if not os.path.isdir(f"experiment_results/{target}/{agg_name}"):
-                os.mkdir(f"experiment_results/{target}/{agg_name}")
-            if not os.path.isdir(
-                f"experiment_results/{target}/{agg_name}/{hash}"
-            ):
-                os.mkdir(f"experiment_results/{target}/{agg_name}/{hash}")
-
-            with open(f"{conf_dir}/config.json", "w") as f:
-                json.dump(config, f)
-            np.save(f"{conf_dir}/execution_times.npy", execution_times)
+            write_execution_times(execution_times, target, agg_name, hash)
 
     print("Execution times:")
     print(execution_times)
