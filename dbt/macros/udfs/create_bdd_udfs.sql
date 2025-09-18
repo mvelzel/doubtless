@@ -67,3 +67,26 @@
     {% endif %}
 
 {% endmacro %}
+
+{% macro create_bdd_prune_and_udf() %}
+
+    {% if target.name == 'postgres' %}
+        create or replace function prune_and(this bdd, that bdd)
+        returns bdd
+        language plpgsql
+        as $$
+        declare res bdd;
+        begin
+            select (this & that) into res;
+
+            if bdd_equiv(res, bdd('0')) then
+                return bdd('0');
+            else
+                return res;
+            end if;
+        end $$;
+    {% else %}
+        select 1;
+    {% endif %}
+
+{% endmacro %}

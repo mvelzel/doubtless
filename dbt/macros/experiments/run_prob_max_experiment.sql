@@ -18,7 +18,7 @@
     {% elif target.name == 'postgres' %}
         select res.max from grouped
         left join lateral (
-            select * from {{ consume_prob_agg_results('grouped.map') }} as res(max integer,sentence bdd)
+            select * from consume_prob_agg_results(grouped.map) as res(max integer,sentence bdd)
         ) res on true;
     {% endif %}
     {% endset %}

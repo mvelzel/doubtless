@@ -3,38 +3,28 @@
     {% if target.name == 'spark' or target.name == 'databricks' %}
         select 1;
     {%- elif target.name == 'postgres' -%}
-        create or replace function consume_prob_agg_results_inmemory(anyarray)
-            returns setof record
-            language plpgsql
-            immutable
-            as $$ begin
-                return query select res.*
-                from unnest($1) as res;
-            end $$;
-
-        create or replace function consume_prob_agg_results_temptable(results_table text)
-            returns setof record
-            language plpgsql
-            volatile
-            as $$ begin
-                return query execute format('select * from %I', results_table);
-
-                execute format('drop table %I', results_table);
-                return;
-            end $$;
-    {%- endif -%}
-
-{% endmacro %}
-
-{% macro consume_prob_agg_results(field) %}
-
-    {% if target.name == 'spark' or target.name == 'databricks' %}
-        select 1;
-    {%- elif target.name == 'postgres' -%}
         {%- if var('postgres_prob_agg_type') == 'inmemory' -%}
-            consume_prob_agg_results_inmemory({{ field }})
+            drop function if exists consume_prob_agg_results(anyarray);
+            create or replace function consume_prob_agg_results(anyarray)
+                returns setof record
+                language plpgsql
+                immutable
+                as $$ begin
+                    return query select res.*
+                    from unnest($1) as res;
+                end $$;
         {%- elif var('postgres_prob_agg_type') == 'temptable' -%}
-            consume_prob_agg_results_temptable({{ field }})
+            drop function if exists consume_prob_agg_results(text);
+            create or replace function consume_prob_agg_results(results_table text)
+                returns setof record
+                language plpgsql
+                volatile
+                as $$ begin
+                    return query execute format('select * from %I', results_table);
+
+                    execute format('drop table %I', results_table);
+                    return;
+                end $$;
         {%- endif -%}
     {%- endif -%}
 

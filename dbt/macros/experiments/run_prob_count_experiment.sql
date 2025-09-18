@@ -15,7 +15,7 @@
     {% elif target.name == 'postgres' %}
         select res.count from grouped
         left join lateral (
-            select * from {{ consume_prob_agg_results('grouped.map') }} as res(count integer,sentence bdd)
+            select * from consume_prob_agg_results(grouped.map) as res(count integer,sentence bdd)
         ) res on true;
     {% endif %}
     {% endset %}

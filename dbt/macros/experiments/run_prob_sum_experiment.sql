@@ -2,11 +2,7 @@
 
     {% set sql %}
     with grouped as (
-        {% if target.name == 'spark' or target.name == 'databricks' %}
-        select prob_sum(cast(number as double), sentence, '{{ var("prune_method") }}') as map
-        {% else %}
-        select prob_sum(number, sentence) as map
-        {% endif %}
+        select prob_sum(cast(number as double precision), sentence, '{{ var("prune_method") }}') as map
         from experiments.probabilistic_sum_dataset
         where experiment_name = '{{ experiment_name }}'
         group by group_index
@@ -18,7 +14,7 @@
     {% elif target.name == 'postgres' %}
         select res.sum from grouped
         left join lateral (
-            select * from {{ consume_prob_agg_results('grouped.map') }} as res(sum float8,sentence bdd)
+            select * from consume_prob_agg_results(grouped.map) as res(sum float8,sentence bdd)
         ) res on true;
     {% endif %}
     {% endset %}

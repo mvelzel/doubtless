@@ -18,7 +18,7 @@
     {% elif target.name == 'postgres' %}
         select res.avg from grouped
         left join lateral (
-            select * from {{ consume_prob_agg_results('grouped.map') }} as res(avg float8,sentence bdd)
+            select * from consume_prob_agg_results(grouped.map) as res(avg float8,sentence bdd)
         ) res on true;
     {% endif %}
     {% endset %}

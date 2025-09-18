@@ -24,6 +24,7 @@ clean-targets:         # directories to be removed by `dbt clean`
 
 vars:
   postgres_prob_agg_type: 'inmemory'
+  # postgres_prob_agg_type: 'temptable'
   prune_method: 'none'
 
 on-run-start:
@@ -35,6 +36,7 @@ on-run-start:
   - '{{ create_bdd_not_udf() }}'
   - '{{ create_bdd_prob_udf() }}'
   - '{{ create_bdd_equiv_udf() }}'
+  - '{{ create_bdd_prune_and_udf() }}'
   - '{{ create_prob_dict_udf() }}'
   - '{{ create_prob_dict_to_string_udf() }}'
   # Create all UDAFs
