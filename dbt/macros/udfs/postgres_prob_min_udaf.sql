@@ -133,9 +133,8 @@
     create or replace function prob_min_reduce_inmemory(prob_min_inmemory_inter[], float8, bdd, text)
         returns prob_min_inmemory_inter[]
         immutable
-        language sql
-        return
-        (
+        as
+        $$
             with unnested_bdds as (
                 select
                     $2 as min,
@@ -180,20 +179,20 @@
                 when 'each-operation' then not bdd_equal(bdds.sentence, '0'::bdd)
                 else true
             end
-        );
+        $$ language sql;
 
     create or replace function prob_min_final_inmemory(prob_min_inmemory_inter[])
         returns prob_min_record[]
         immutable
-        language sql
-        return (
+        as
+        $$
             select array_agg(row(record.min, record.sentence)::prob_min_record)
             from unnest($1) as record
             where case when $1[1].prune_method = 'on-finish'
                 then not bdd_fast_equiv(sentence, '0'::bdd)
                 else true
             end
-        );
+        $$ language sql;
 
     drop aggregate if exists prob_min (float8, bdd);
     drop aggregate if exists prob_min (float8, bdd, text);

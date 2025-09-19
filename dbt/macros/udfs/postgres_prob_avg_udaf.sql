@@ -139,9 +139,8 @@
     create or replace function prob_avg_reduce_inmemory(prob_avg_partial_record[], float8, bdd, text)
         returns prob_avg_partial_record[]
         immutable
-        language sql
-        return
-        (
+        as
+        $$
             with unnested_bdds as (
                 select
                     record.count + 1 as count,
@@ -176,14 +175,13 @@
                 when 'each-operation' then not bdd_equal(bdds.sentence, '0'::bdd)
                 else true
             end
-        );
+        $$ language sql;
 
     create or replace function prob_avg_final_inmemory(prob_avg_partial_record[])
         returns prob_avg_record[]
         immutable
-        language sql
-        return
-        (
+        as
+        $$
             select array_agg(row(record.sum, record.sentence)::prob_avg_record)
             from (
                 select
@@ -196,7 +194,7 @@
                 then not bdd_fast_equiv(sentence, '0'::bdd)
                 else true
             end
-        );
+        $$ language sql;
 
     drop aggregate if exists prob_avg (float8, bdd);
     drop aggregate if exists prob_avg (float8, bdd, text);
