@@ -28,6 +28,8 @@ vars:
   prune_method: 'none'
 
 on-run-start:
+  # Create pgbdd extension for postgres
+  - '{{ create_pgbdd_extension() }}'
   # Create all UDFs
   - '{{ create_bdd_udf() }}'
   - '{{ create_bdd_to_string_udf() }}'
@@ -48,8 +50,6 @@ on-run-start:
   - '{{ create_prob_min_udaf() }}'
   - '{{ create_prob_max_udaf() }}'
   - '{{ create_prob_avg_udaf() }}'
-  # Create pgbdd extension for postgres
-  - '{{ create_pgbdd_extension() }}'
   # Ingest the raw data
   - '{{ create_raw_schema() }}'
   - '{{ ingest_wdc_data() }}'
