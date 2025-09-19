@@ -111,9 +111,8 @@
     create or replace function prob_count_reduce_inmemory(inter prob_count_inmemory_inter[], bdd, text)
         returns prob_count_inmemory_inter[]
         immutable
-        language sql
-        return
-        (
+        as
+        $$ 
             with unnested_bdds as (
                 select
                     row(case when $3 = 'each-operation'
@@ -162,14 +161,13 @@
             )
             select array_agg(inter)
             from optionally_filtered_bdds
-        );
+        $$ language sql;
 
     create or replace function prob_count_final_inmemory(prob_count_inmemory_inter[])
         returns prob_count_record[]
         immutable
-        language sql
-        return
-        (
+        as
+        $$
             select array_agg(row(cp1 - 1, sentence)::prob_count_record)
             from unnest($1) with ordinality as x(sentence, _, cp1)
             where case when $1[1].prune_method = 'on-finish'
@@ -177,7 +175,7 @@
                 else true
             end
             and sentence is not null
-        );
+        $$ language sql;
 
     drop aggregate if exists prob_count (bdd);
     drop aggregate if exists prob_count (bdd, text);
