@@ -2,11 +2,11 @@
 
     {% set sql %}
     with grouped as (
-        {% if target.name == 'spark' or target.name == 'databricks' %}
+        {% if target.name == 'spark' or target.name == 'databricks' -%}
         select prob_avg(cast(number as double), sentence, '{{ var("prune_method") }}') as map
-        {% else %}
-        select prob_avg(number, sentence) as map
-        {% endif %}
+        {% elif target.name == 'postgres' -%}
+        select prob_avg(cast(number as double precision), sentence, '{{ var("prune_method") }}') as map
+        {% endif -%}
         from experiments.probabilistic_avg_dataset
         where experiment_name = '{{ experiment_name }}'
         group by group_index

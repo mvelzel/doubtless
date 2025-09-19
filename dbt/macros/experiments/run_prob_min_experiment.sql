@@ -2,11 +2,11 @@
 
     {% set sql %}
     with grouped as (
-        {% if target.name == 'spark' or target.name == 'databricks' %}
+        {% if target.name == 'spark' or target.name == 'databricks' -%}
         select prob_min(cast(number as double), sentence, '{{ var("prune_method") }}') as map
-        {% else %}
-        select prob_min(number, sentence) as map
-        {% endif %}
+        {% elif target.name == 'postgres' -%}
+        select prob_min(cast(number as double precision), sentence, '{{ var("prune_method") }}') as map
+        {% endif -%}
         from experiments.probabilistic_min_dataset
         where experiment_name = '{{ experiment_name }}'
         group by group_index
@@ -18,7 +18,7 @@
     {% elif target.name == 'postgres' %}
         select res.min from grouped
         left join lateral (
-            select * from consume_prob_agg_results(grouped.map) as res(min integer,sentence bdd)
+            select * from consume_prob_agg_results(grouped.map) as res(min double precision,sentence bdd)
         ) res on true;
     {% endif %}
     {% endset %}

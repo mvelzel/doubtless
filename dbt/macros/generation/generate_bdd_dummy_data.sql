@@ -18,7 +18,11 @@
         '{{ experiment_name }}',
         {{ group }},
         {% if include_random_numbers -%}
+        {% if target.name == 'spark' or target.name == 'databricks' -%}
+        cast({{ (range(100) | random) / 100 }} as double),
+        {% elif target.name == 'postgres' -%}
         cast({{ (range(100) | random) / 100 }} as double precision),
+        {% endif -%}
         {% endif -%}
         {% if i >= group_variables * variable_alternatives -%}
         bdd('g1=0'),
