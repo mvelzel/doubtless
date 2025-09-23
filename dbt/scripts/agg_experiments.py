@@ -1,4 +1,5 @@
 from dbt.cli.main import dbtRunner, dbtRunnerResult
+import concurrent.futures
 import matplotlib.ticker as mticker
 import os
 import hashlib
@@ -10,10 +11,13 @@ import argparse
 from tqdm import tqdm
 from sklearn.model_selection import ParameterGrid
 import signal
+import sys
 
 param_grid = {
     "prune_method": ["none", "each-operation", "each-step", "on-finish"]
 }
+
+experiment_timeout = 15 * 60  # 15 minutes
 
 experiments = {
     "count": {
@@ -101,22 +105,49 @@ def build_dataset(dbt, target, dataset):
 
 
 def run_experiment(dbt, experiment_name, target, operation, config):
+    f = open(os.devnull, 'w')
+    sys.stdout = f
+
     cli_args = [
         "run-operation", operation,
         "--args", "{ experiment_name: " + experiment_name + " }",
         "--target", target,
         "--quiet",
-        "--vars", yaml.dump(config)
+        "--vars", yaml.dump(config),
     ]
     res: dbtRunnerResult = dbt.invoke(cli_args)
 
     if res.success:
         return res.result.results[0].execution_time
     else:
+        print(res)
         if res.exception is not None:
             raise res.exception
         else:
             raise Exception(f"Running experiment {experiment_name} failed.")
+
+
+def abort_running_experiments(dbt, target):
+    f = open(os.devnull, 'w')
+
+    sys.stdout = sys.__stdout__
+    print("Aborting running experiments...")
+    sys.stdout = f
+
+    cli_args = [
+        "run-operation", "abort_running_experiments",
+        "--target", target,
+        "--quiet",
+    ]
+    res: dbtRunnerResult = dbt.invoke(cli_args)
+
+    sys.stdout = sys.__stdout__
+    if not res.success:
+        print("Aborting running experiments failed.")
+        print(res.exception)
+    else:
+        print("Successfully aborted running experiments.")
+    sys.stdout = f
 
 
 def write_execution_times(execution_times, target, agg_name, hash):
@@ -147,27 +178,52 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
 
     operation = experiments[agg_name]["operation"]
 
-    # Warmup the database so the first experiment is not disproportionally long
-    run_experiment(dbt, experiment_names[0][0], target, operation, config)
-
     execution_times: list[float] = []
-    for i, variables in enumerate(tqdm(experiment_names)):
-        if test_run:
-            variables = [variables[0]]
 
-        execution_times.append([])
-        for name in tqdm(variables):
-            time = float("nan")
-            try:
-                time = float(run_experiment(
-                    dbt, name, target, operation, config
-                ))
-            except Exception as e:
-                print(e)
-            execution_times[i].append(time)
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        # Warmup the database so the first experiment is not too long
+        warmup_future = executor.submit(
+            run_experiment,
+            dbt,
+            experiment_names[0][0],
+            target,
+            operation,
+            config
+        )
+        warmup_future.result()
 
-        if not test_run:
-            write_execution_times(execution_times, target, agg_name, hash)
+        for i, variables in enumerate(tqdm(experiment_names)):
+            if test_run:
+                variables = [variables[0]]
+
+            execution_times.append([])
+            for name in tqdm(variables):
+                time = None
+
+                future = executor.submit(
+                    run_experiment, dbt, name, target, operation, config)
+
+                try:
+                    time = float(future.result(experiment_timeout))
+                except TimeoutError:
+                    print(f"Experiment {name} timed out after {
+                          experiment_timeout / 60} minutes.")
+                    future.cancel()
+
+                    timeout_future = executor.submit(
+                        abort_running_experiments, dbt, target)
+                    timeout_future.result()
+
+                    time = float("nan")
+                except Exception as e:
+                    print(e)
+                execution_times[i].append(time)
+
+            if not test_run:
+                write_execution_times(execution_times, target, agg_name, hash)
+
+        for process in executor._processes.values():
+            process.kill()
 
     return execution_times
 

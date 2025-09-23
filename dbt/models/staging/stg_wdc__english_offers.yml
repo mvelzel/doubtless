@@ -4,9 +4,10 @@ models:
   - name: stg_wdc__english_offers
     data_tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - url
-            - nodeID
+          arguments:
+            combination_of_columns:
+              - url
+              - nodeID
     columns:
       - name: cluster_id
         data_tests:
