@@ -1,5 +1,8 @@
 from dbt.cli.main import dbtRunner, dbtRunnerResult
-import concurrent.futures
+import logging
+import time
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from multiprocessing import Process, Queue
 import matplotlib.ticker as mticker
 import os
 import hashlib
@@ -11,7 +14,6 @@ import argparse
 from tqdm import tqdm
 from sklearn.model_selection import ParameterGrid
 import signal
-import sys
 
 param_grid = {
     "prune_method": ["none", "each-operation", "each-step", "on-finish"]
@@ -104,50 +106,56 @@ def build_dataset(dbt, target, dataset):
     dbt.invoke(cli_args)
 
 
-def run_experiment(dbt, experiment_name, target, operation, config):
-    f = open(os.devnull, 'w')
-    sys.stdout = f
+@contextmanager
+def suppress_stdout_stderr():
+    """A context manager that redirects stdout and stderr to devnull"""
+    with open(os.devnull, "w") as fnull:
+        with redirect_stderr(fnull) as err, redirect_stdout(fnull) as out:
+            yield (err, out)
 
-    cli_args = [
-        "run-operation", operation,
-        "--args", "{ experiment_name: " + experiment_name + " }",
-        "--target", target,
-        "--quiet",
-        "--vars", yaml.dump(config),
-    ]
-    res: dbtRunnerResult = dbt.invoke(cli_args)
+
+def run_experiment(dbt, experiment_name, target, operation, config, queue):
+    logging.getLogger("thrift.transport").setLevel(logging.ERROR)
+    with suppress_stdout_stderr():
+        cli_args = [
+            "run-operation", operation,
+            "--args", "{ experiment_name: " + experiment_name + " }",
+            "--target", target,
+            "--quiet",
+            "--vars", yaml.dump(config),
+        ]
+        res: dbtRunnerResult = dbt.invoke(cli_args)
 
     if res.success:
-        return res.result.results[0].execution_time
+        if queue is not None:
+            ret = queue.get()
+            ret["result"] = res.result.results[0].execution_time
+            queue.put(ret)
     else:
-        print(res)
-        if res.exception is not None:
-            raise res.exception
-        else:
-            raise Exception(f"Running experiment {experiment_name} failed.")
+        print(f"Running experiment {experiment_name} failed.")
+        if queue is not None:
+            ret = queue.get()
+            ret["result"] = None
+            queue.put(ret)
 
 
 def abort_running_experiments(dbt, target):
-    f = open(os.devnull, 'w')
-
-    sys.stdout = sys.__stdout__
     print("Aborting running experiments...")
-    sys.stdout = f
 
-    cli_args = [
-        "run-operation", "abort_running_experiments",
-        "--target", target,
-        "--quiet",
-    ]
-    res: dbtRunnerResult = dbt.invoke(cli_args)
+    logging.getLogger("thrift.transport").setLevel(logging.ERROR)
+    with suppress_stdout_stderr():
+        cli_args = [
+            "run-operation", "abort_running_experiments",
+            "--target", target,
+            "--quiet",
+        ]
+        res: dbtRunnerResult = dbt.invoke(cli_args)
 
-    sys.stdout = sys.__stdout__
     if not res.success:
         print("Aborting running experiments failed.")
         print(res.exception)
     else:
         print("Successfully aborted running experiments.")
-    sys.stdout = f
 
 
 def write_execution_times(execution_times, target, agg_name, hash):
@@ -180,50 +188,71 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
 
     execution_times: list[float] = []
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        # Warmup the database so the first experiment is not too long
-        warmup_future = executor.submit(
-            run_experiment,
-            dbt,
-            experiment_names[0][0],
-            target,
-            operation,
-            config
-        )
-        warmup_future.result()
+    # Warmup the database so the first experiment is not too long
+    run_experiment(
+        dbt,
+        experiment_names[0][0],
+        target,
+        operation,
+        config,
+        None
+    )
 
-        for i, variables in enumerate(tqdm(experiment_names)):
-            if test_run:
-                variables = [variables[0]]
+    for i, variables in enumerate(tqdm(experiment_names)):
+        if test_run:
+            variables = [variables[0]]
 
-            execution_times.append([])
-            for name in tqdm(variables):
-                time = None
+        execution_times.append([])
+        aborted = False
+        for name in tqdm(variables):
+            exec_time = None
 
-                future = executor.submit(
-                    run_experiment, dbt, name, target, operation, config)
+            if not aborted:
+                queue = Queue()
 
-                try:
-                    time = float(future.result(experiment_timeout))
-                except TimeoutError:
-                    print(f"Experiment {name} timed out after {
-                          experiment_timeout / 60} minutes.")
-                    future.cancel()
+                process = Process(target=run_experiment, args=(
+                    dbt,
+                    name,
+                    target,
+                    operation,
+                    config,
+                    queue
+                ))
+                process.start()
+                start_time = time.time()
 
-                    timeout_future = executor.submit(
-                        abort_running_experiments, dbt, target)
-                    timeout_future.result()
+                while process.is_alive():
+                    if time.time() - start_time > experiment_timeout:
+                        print(f"Experiment {name} timed out after {
+                              experiment_timeout / 60} minutes.")
+                        os.kill(process.pid, signal.SIGINT)
 
-                    time = float("nan")
-                except Exception as e:
-                    print(e)
-                execution_times[i].append(time)
+                        if target == "postgres":
+                            abort_running_experiments(
+                                dbt,
+                                target
+                            )
 
-            if not test_run:
-                write_execution_times(execution_times, target, agg_name, hash)
+                        time.sleep(5)
 
-        for process in executor._processes.values():
-            process.kill()
+                        if process.is_alive():
+                            print("Forcing process termination...")
+                            process.terminate()
+
+                        aborted = True
+
+                        break
+                process.join()
+
+            if aborted:
+                exec_time = float("nan")
+            else:
+                exec_time = queue.get()["result"]
+
+            execution_times[i].append(exec_time)
+
+        if not test_run:
+            write_execution_times(execution_times, target, agg_name, hash)
 
     return execution_times
 
