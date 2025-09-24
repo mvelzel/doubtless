@@ -300,52 +300,55 @@ def run_aggregation_experiments(args, dbt, agg_name, config):
     print("Execution times:")
     print(execution_times)
 
-    xrange = np.arange(1, execution_times.shape[0] + 1)
-    yrange = np.arange(1, execution_times.shape[1] + 1)
+    try:
+        xrange = np.arange(1, execution_times.shape[0] + 1)
+        yrange = np.arange(1, execution_times.shape[1] + 1)
 
-    X, Y = np.meshgrid(xrange, yrange)
+        X, Y = np.meshgrid(xrange, yrange)
 
-    fig = plt.figure()
-    plt.title(f"{agg_name}\n{config['prune_method']}")
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(X, Y, np.log10(execution_times), cmap="viridis")
+        fig = plt.figure()
+        plt.title(f"{agg_name}\n{config['prune_method']}")
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(X, Y, np.log10(execution_times), cmap="viridis")
 
-    ax.set_xlabel("Variables")
-    ax.set_ylabel("Alternatives per Variable")
-    ax.set_zlabel("Execution Time ($\\log^{10}$)")
+        ax.set_xlabel("Variables")
+        ax.set_ylabel("Alternatives per Variable")
+        ax.set_zlabel("Execution Time ($\\log^{10}$)")
 
-    ax.zaxis.set_major_formatter(mticker.FuncFormatter(log_tick_formatter))
-    ax.zaxis.set_major_locator(mticker.MaxNLocator(integer=True))
+        ax.zaxis.set_major_formatter(mticker.FuncFormatter(log_tick_formatter))
+        ax.zaxis.set_major_locator(mticker.MaxNLocator(integer=True))
 
-    ax.set_xticks(xrange, [f"{x}" for x in xrange])
-    ax.set_yticks(yrange, [f"{y}" for y in yrange])
+        ax.set_xticks(xrange, [f"{x}" for x in xrange])
+        ax.set_yticks(yrange, [f"{y}" for y in yrange])
 
-    if not test_run:
-        plt.savefig(f"{conf_dir}/3dplot.png")
+        if not test_run:
+            plt.savefig(f"{conf_dir}/3dplot.png")
 
-    world_counts = (Y ** X).flatten()
-    flat_execution_times = execution_times.flatten()
+        world_counts = (Y ** X).flatten()
+        flat_execution_times = execution_times.flatten()
 
-    plt.figure()
-    plt.title(f"{agg_name}\n{config['prune_method']}")
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.scatter(world_counts, flat_execution_times)
+        plt.figure()
+        plt.title(f"{agg_name}\n{config['prune_method']}")
+        plt.xscale("log")
+        plt.yscale("log")
+        plt.scatter(world_counts, flat_execution_times)
 
-    ymin, ymax = plt.ylim()
+        ymin, ymax = plt.ylim()
 
-    plt.vlines(
-        x=world_counts[np.isnan(flat_execution_times)],
-        ymin=ymin,
-        ymax=ymax,
-        color='red',
-        linestyle='--',
-        linewidth=1,
-        label='NaN'
-    )
+        plt.vlines(
+            x=world_counts[np.isnan(flat_execution_times)],
+            ymin=ymin,
+            ymax=ymax,
+            color='red',
+            linestyle='--',
+            linewidth=1,
+            label='NaN'
+        )
 
-    if not test_run:
-        plt.savefig(f"{conf_dir}/2dplot.png")
+        if not test_run:
+            plt.savefig(f"{conf_dir}/2dplot.png")
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
