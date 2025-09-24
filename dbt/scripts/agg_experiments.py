@@ -1,6 +1,5 @@
 from dbt.cli.main import dbtRunner, dbtRunnerResult
 import logging
-import time
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from multiprocessing import Process, Queue
 import matplotlib.ticker as mticker
@@ -128,15 +127,11 @@ def run_experiment(dbt, experiment_name, target, operation, config, queue):
 
     if res.success:
         if queue is not None:
-            ret = queue.get()
-            ret["result"] = res.result.results[0].execution_time
-            queue.put(ret)
+            queue.put({"result": res.result.results[0].execution_time})
     else:
         print(f"Running experiment {experiment_name} failed.")
         if queue is not None:
-            ret = queue.get()
-            ret["result"] = None
-            queue.put(ret)
+            queue.put({"result": None})
 
 
 def abort_running_experiments(dbt, target):
@@ -219,35 +214,35 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
                     queue
                 ))
                 process.start()
-                start_time = time.time()
 
-                while process.is_alive():
-                    if time.time() - start_time > experiment_timeout:
-                        print(f"Experiment {name} timed out after {
-                              experiment_timeout / 60} minutes.")
-                        os.kill(process.pid, signal.SIGINT)
+                process.join(experiment_timeout)
 
-                        if target == "postgres":
-                            abort_running_experiments(
-                                dbt,
-                                target
-                            )
+                if process.is_alive():
+                    print(f"Experiment {name} timed out after {
+                          experiment_timeout / 60} minutes.")
+                    os.kill(process.pid, signal.SIGINT)
 
-                        time.sleep(5)
+                    if target == "postgres":
+                        abort_running_experiments(
+                            dbt,
+                            target
+                        )
 
-                        if process.is_alive():
-                            print("Forcing process termination...")
-                            process.terminate()
+                    process.join(10)  # Give the process 10 seconds to abort.
 
-                        aborted = True
+                    if process.is_alive():
+                        print("Forcing process termination...")
+                        process.terminate()
 
-                        break
+                    aborted = True
                 process.join()
 
-            if aborted:
-                exec_time = float("nan")
+                if aborted:
+                    exec_time = float("nan")
+                else:
+                    exec_time = queue.get()["result"]
             else:
-                exec_time = queue.get()["result"]
+                exec_time = float("nan")
 
             execution_times[i].append(exec_time)
 
