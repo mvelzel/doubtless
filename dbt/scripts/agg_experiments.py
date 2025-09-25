@@ -2,6 +2,7 @@ from dbt.cli.main import dbtRunner, dbtRunnerResult
 import logging
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from multiprocessing import Process, Queue
+from queue import Empty
 import matplotlib.ticker as mticker
 import os
 import hashlib
@@ -114,7 +115,6 @@ def suppress_stdout_stderr():
 
 
 def run_experiment(dbt, experiment_name, target, operation, config, queue):
-    logging.getLogger("thrift.transport").setLevel(logging.ERROR)
     with suppress_stdout_stderr():
         cli_args = [
             "run-operation", operation,
@@ -127,20 +127,20 @@ def run_experiment(dbt, experiment_name, target, operation, config, queue):
 
     if res.success:
         if queue is not None:
-            queue.put({"result": res.result.results[0].execution_time})
+            queue.put(
+                {"result": res.result.results[0].execution_time}, timeout=5)
     else:
         with open("dbt_log.txt", "a+") as f:
             f.write(f"Running experiment {experiment_name} failed.")
             f.write(str(res))
         print(f"Running experiment {experiment_name} failed.")
         if queue is not None:
-            queue.put({"result": None})
+            queue.put({"result": None}, timeout=5)
 
 
 def abort_running_experiments(dbt, target):
     print("Aborting running experiments...")
 
-    logging.getLogger("thrift.transport").setLevel(logging.ERROR)
     with suppress_stdout_stderr():
         cli_args = [
             "run-operation", "abort_running_experiments",
@@ -244,9 +244,14 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
                 if aborted:
                     exec_time = float("nan")
                 else:
-                    exec_time = queue.get()["result"]
-                    if exec_time is None:
-                        broken = True
+                    try:
+                        queue_get = queue.get(timeout=5)
+                        exec_time = queue_get["result"]
+                        if exec_time is None:
+                            broken = True
+                    except Empty:
+                        exec_time = None
+                queue = None
             elif aborted:
                 exec_time = float("nan")
             elif broken:
@@ -355,6 +360,8 @@ def run_aggregation_experiments(args, dbt, agg_name, config):
 
 
 if __name__ == "__main__":
+    logging.getLogger("thrift.transport").setLevel(logging.ERROR)
+
     signal.signal(signal.SIGINT, signal.default_int_handler)
 
     parser = argparse.ArgumentParser()
