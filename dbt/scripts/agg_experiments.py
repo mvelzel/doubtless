@@ -129,6 +129,9 @@ def run_experiment(dbt, experiment_name, target, operation, config, queue):
         if queue is not None:
             queue.put({"result": res.result.results[0].execution_time})
     else:
+        with open("dbt_log.txt", "a+") as f:
+            f.write(f"Running experiment {experiment_name} failed.")
+            f.write(str(res))
         print(f"Running experiment {experiment_name} failed.")
         if queue is not None:
             queue.put({"result": None})
@@ -199,10 +202,11 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
 
         execution_times.append([])
         aborted = False
+        broken = False
         for name in tqdm(variables):
             exec_time = None
 
-            if not aborted:
+            if not aborted and not broken:
                 queue = Queue()
 
                 process = Process(target=run_experiment, args=(
@@ -241,8 +245,12 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
                     exec_time = float("nan")
                 else:
                     exec_time = queue.get()["result"]
-            else:
+                    if exec_time is None:
+                        broken = True
+            elif aborted:
                 exec_time = float("nan")
+            elif broken:
+                exec_time = None
 
             execution_times[i].append(exec_time)
 
