@@ -1,5 +1,4 @@
 from dbt.cli.main import dbtRunner, dbtRunnerResult
-import logging
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from multiprocessing import Process, Queue, set_start_method
 from queue import Empty
@@ -14,8 +13,9 @@ import argparse
 from tqdm import tqdm
 from sklearn.model_selection import ParameterGrid
 import signal
+import logging
 
-logger = logging.getLogger(__name__)
+logging.getLogger("thrift.transport").setLevel(logging.ERROR)
 
 param_grid = {
     "prune_method": ["none", "each-operation", "each-step", "on-finish"]
@@ -117,6 +117,17 @@ def suppress_stdout_stderr():
 
 
 def run_experiment(dbt, experiment_name, target, operation, config, queue):
+    logging.basicConfig(
+        filename=f"experiments-{target}.log",
+        level=logging.INFO,
+        datefmt="%Y-%m-%d %H:%M:%S",
+        format="%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s",
+        filemode="a",
+        force=True,
+    )
+
+    logger = logging.getLogger(__name__)
+
     with suppress_stdout_stderr():
         cli_args = [
             "run-operation", operation,
@@ -147,7 +158,18 @@ def run_experiment(dbt, experiment_name, target, operation, config, queue):
 
 
 def abort_running_experiments(dbt, target):
+    logging.basicConfig(
+        filename=f"experiments-{target}.log",
+        level=logging.INFO,
+        datefmt="%Y-%m-%d %H:%M:%S",
+        format="%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s",
+        filemode="a",
+        force=True,
+    )
+
+    logger = logging.getLogger(__name__)
     print("Aborting running experiments...")
+    logger.info("Aborting running experiments...")
 
     with suppress_stdout_stderr():
         cli_args = [
@@ -185,6 +207,8 @@ def write_execution_times(execution_times, target, agg_name, hash):
 
 
 def run_all_experiments(dbt, target, agg_name, config, test_run=False):
+    logger = logging.getLogger(__name__)
+
     hash = hashlib.md5(json.dumps(
         config, sort_keys=True).encode("utf-8")
     ).hexdigest()
@@ -288,6 +312,8 @@ built_datasets = []
 
 
 def run_aggregation_experiments(args, dbt, agg_name, config):
+    logger = logging.getLogger(__name__)
+
     agg_experiment_settings = experiments[agg_name]
 
     print(f"Running experiments for {
@@ -377,8 +403,6 @@ def run_aggregation_experiments(args, dbt, agg_name, config):
 
 
 if __name__ == "__main__":
-    logging.getLogger("thrift.transport").setLevel(logging.ERROR)
-
     set_start_method("spawn")
 
     signal.signal(signal.SIGINT, signal.default_int_handler)
@@ -431,7 +455,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    logging.basicConfig(filename=f"dbt-{args.target}.log", level=logging.INFO)
+    logging.basicConfig(
+        filename=f"experiments-{args.target}.log",
+        level=logging.INFO,
+        datefmt="%Y-%m-%d %H:%M:%S",
+        format="%(asctime)s,%(msecs)03d %(name)s %(levelname)s %(message)s",
+        filemode="w",
+        force=True,
+    )
+
+    logger = logging.getLogger(__name__)
     logger.info("Started")
 
     dbt = dbtRunner()
