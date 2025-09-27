@@ -1,4 +1,4 @@
-from dbt.cli.mai import dbtRunner, dbtRunnerResult
+from dbt.cli.main import dbtRunner, dbtRunnerResult
 import logging
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from multiprocessing import Process, Queue, set_start_method
