@@ -379,9 +379,6 @@ def run_aggregation_experiments(args, dbt, agg_name, config):
 if __name__ == "__main__":
     logging.getLogger("thrift.transport").setLevel(logging.ERROR)
 
-    logging.basicConfig(filename="dbt.log", level=logging.INFO)
-    logger.info("Started")
-
     set_start_method("spawn")
 
     signal.signal(signal.SIGINT, signal.default_int_handler)
@@ -433,6 +430,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    logging.basicConfig(filename=f"dbt-{args.target}.log", level=logging.INFO)
+    logger.info("Started")
 
     dbt = dbtRunner()
 
