@@ -1,7 +1,7 @@
-from dbt.cli.main import dbtRunner, dbtRunnerResult
+from dbt.cli.mai import dbtRunner, dbtRunnerResult
 import logging
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, set_start_method
 from queue import Empty
 import matplotlib.ticker as mticker
 import os
@@ -14,6 +14,8 @@ import argparse
 from tqdm import tqdm
 from sklearn.model_selection import ParameterGrid
 import signal
+
+logger = logging.getLogger(__name__)
 
 param_grid = {
     "prune_method": ["none", "each-operation", "each-step", "on-finish"]
@@ -123,16 +125,22 @@ def run_experiment(dbt, experiment_name, target, operation, config, queue):
             "--quiet",
             "--vars", yaml.dump(config),
         ]
+        logger.info(f"Invoking experiment {experiment_name} through dbt.")
         res: dbtRunnerResult = dbt.invoke(cli_args)
+        logger.info("Dbt command finished.")
 
     if res.success:
+        res = res.result.results[0].execution_time
         if queue is not None:
+            logger.info(f"Putting {experiment_name} result {res} into queue.")
             queue.put(
-                {"result": res.result.results[0].execution_time}, timeout=5)
+                {"result": res}, timeout=5)
+        else:
+            logger.info(f"No queue found for {experiment_name} result {res}.")
+
     else:
-        with open("dbt_log.txt", "a+") as f:
-            f.write(f"Running experiment {experiment_name} failed.")
-            f.write(str(res))
+        logger.error(f"Running experiment {experiment_name} failed.")
+        logger.error(str(res))
         print(f"Running experiment {experiment_name} failed.")
         if queue is not None:
             queue.put({"result": None}, timeout=5)
@@ -152,8 +160,11 @@ def abort_running_experiments(dbt, target):
     if not res.success:
         print("Aborting running experiments failed.")
         print(res.exception)
+        logger.error("Aborting running experiments failed.")
+        logger.error(res.exception)
     else:
         print("Successfully aborted running experiments.")
+        logger.info("Successfully aborted running experiments.")
 
 
 def write_execution_times(execution_times, target, agg_name, hash):
@@ -222,6 +233,8 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
                 process.join(experiment_timeout)
 
                 if process.is_alive():
+                    logger.error(f"Experiment {name} timed out after {
+                        experiment_timeout / 60} minutes.")
                     print(f"Experiment {name} timed out after {
                           experiment_timeout / 60} minutes.")
                     os.kill(process.pid, signal.SIGINT)
@@ -236,6 +249,7 @@ def run_all_experiments(dbt, target, agg_name, config, test_run=False):
 
                     if process.is_alive():
                         print("Forcing process termination...")
+                        logger.info("Forcing process termination...")
                         process.terminate()
 
                     aborted = True
@@ -278,6 +292,8 @@ def run_aggregation_experiments(args, dbt, agg_name, config):
 
     print(f"Running experiments for {
           agg_name} aggregation with config: {config}.")
+    logger.info(f"Running experiments for {
+        agg_name} aggregation with config: {config}.")
 
     target = args.target
 
@@ -305,6 +321,7 @@ def run_aggregation_experiments(args, dbt, agg_name, config):
         if not test_run:
             write_execution_times(execution_times, target, agg_name, hash)
 
+    logger.info("Experiments for {agg_name} finished.")
     print("Execution times:")
     print(execution_times)
 
@@ -361,6 +378,11 @@ def run_aggregation_experiments(args, dbt, agg_name, config):
 
 if __name__ == "__main__":
     logging.getLogger("thrift.transport").setLevel(logging.ERROR)
+
+    logging.basicConfig(filename="dbt.log", level=logging.INFO)
+    logger.info("Started")
+
+    set_start_method("spawn")
 
     signal.signal(signal.SIGINT, signal.default_int_handler)
 
@@ -437,3 +459,5 @@ if __name__ == "__main__":
 
     if args.show_plots:
         plt.show()
+
+    logger.info("Finished")
