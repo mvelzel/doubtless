@@ -2,11 +2,52 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <stdint.h>
 
 #include "vector.h"
 #include "utils.h"
 #include "dictionary.h"
 #include "bdd.h"
+
+static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
+                                'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+                                'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+                                'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+                                'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+                                'w', 'x', 'y', 'z', '0', '1', '2', '3',
+                                '4', '5', '6', '7', '8', '9', '+', '/'};
+static int mod_table[] = {0, 2, 1};
+
+
+char *base64_encode(const unsigned char *data,
+                    size_t input_length) {
+    size_t output_length = 4 * ((input_length + 2) / 3) + 1;
+
+    char *encoded_data = malloc(output_length);
+    if (encoded_data == NULL) return NULL;
+
+    for (int i = 0, j = 0; i < input_length;) {
+
+        uint32_t octet_a = i < input_length ? (unsigned char)data[i++] : 0;
+        uint32_t octet_b = i < input_length ? (unsigned char)data[i++] : 0;
+        uint32_t octet_c = i < input_length ? (unsigned char)data[i++] : 0;
+
+        uint32_t triple = (octet_a << 0x10) + (octet_b << 0x08) + octet_c;
+
+        encoded_data[j++] = encoding_table[(triple >> 3 * 6) & 0x3F];
+        encoded_data[j++] = encoding_table[(triple >> 2 * 6) & 0x3F];
+        encoded_data[j++] = encoding_table[(triple >> 1 * 6) & 0x3F];
+        encoded_data[j++] = encoding_table[(triple >> 0 * 6) & 0x3F];
+    }
+
+    for (int i = 0; i < mod_table[input_length % 3]; i++)
+        encoded_data[output_length - 2 - i] = '=';
+
+    encoded_data[output_length - 1] = '\0';
+
+    return encoded_data;
+}
 
 char* exprs[] = {
     "1",
@@ -137,12 +178,72 @@ static void print_info(char* info) {
     printf("[info] \033[0;32m%s\033[0m\n", info);
 }
 
+static void big_bdd() {
+    char* _errmsg = NULL;
+    char* op = "&";
+
+    int repeat = 41663;
+
+    bdd* res = NULL;
+    for (int r = 0; r < repeat; r++) {
+        char expr[100];
+        sprintf(expr, "x=%d", r);
+        char* expr_ptr = expr;
+        bdd* new_bdd;
+        if (!(new_bdd = create_bdd(BDD_DEFAULT, expr_ptr, &_errmsg, 0))) {
+            printf("create_bdd: error: %s ",(_errmsg ? _errmsg : "NULL"));
+        }
+
+        if (res == NULL) {
+            res = new_bdd;
+        } else {
+            bdd* new_res;
+
+            if (!(new_res = bdd_operator(*op, BY_APPLY, res, new_bdd, &_errmsg))) {
+                printf("bdd_operator: error: %s ",(_errmsg ? _errmsg : "NULL"));
+            }
+
+            printf("Inter size: %d, repeat: %d\n", new_res->bytesize, r);
+
+            V_rva_node_free(&new_bdd->tree);
+            free(new_bdd);
+            new_bdd = NULL;
+
+            V_rva_node_free(&res->tree);
+            free(res);
+            res = new_res;
+        }
+
+        if (_errmsg != NULL) {
+            printf("%s", _errmsg);
+        }
+    }
+
+    printf("Total size: %d\n", res->bytesize);
+
+    char* encoded_data = base64_encode((unsigned char*) res, res->bytesize);
+
+    FILE *fptr;
+    fptr = fopen("1mb_bdd.txt", "w+");
+    fprintf(fptr, "%s", encoded_data);
+    fclose(fptr);
+    fptr = NULL;
+
+    free(encoded_data);
+    encoded_data = NULL;
+
+    V_rva_node_free(&res->tree);
+    free(res);
+    res = NULL;
+}
+
 int main() {
-    print_info("A BDD");
-    test_instantiate();
-    print_info("- should be able to quickly be instantiated");
-    test_combine();
-    print_info("- should be able to quickly be combined");
-    test_negate();
-    print_info("- should be able to quickly be negated");
+    big_bdd();
+    //print_info("A BDD");
+    //test_instantiate();
+    //print_info("- should be able to quickly be instantiated");
+    //test_combine();
+    //print_info("- should be able to quickly be combined");
+    //test_negate();
+    //print_info("- should be able to quickly be negated");
 }

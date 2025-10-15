@@ -1,108 +1,135 @@
 package com.doubtless.spark.hive
 
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo
+import org.apache.hadoop.hive.ql.metadata.HiveException
 import com.doubtless.bdd.BDD
 import org.apache.hadoop.hive.ql.udf.generic.{
-  GenericUDAFEvaluator,
   AbstractGenericUDAFResolver,
-  GenericUDAFParameterInfo,
-  GenericUDAFResolver2
+  GenericUDAFEvaluator,
+  GenericUDAFParameterInfo
 }
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.BinaryObjectInspector
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.{
+  AbstractAggregationBuffer,
   AggregationBuffer,
-  AbstractAggregationBuffer
+  Mode
 }
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.{
-  PrimitiveObjectInspectorUtils,
-  PrimitiveObjectInspectorFactory
-}
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.apache.hadoop.hive.ql.exec.Description;
-
-import org.apache.hadoop.hive.ql.exec.{UDAF, UDAFEvaluator}
+import org.apache.hadoop.hive.ql.exec.UDFArgumentException
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory
 import org.apache.hadoop.io.BytesWritable
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo
 
-class HiveBDDAggAndUDAF extends UDAF { }
-object HiveBDDAggAndUDAF {
-  class HiveBDDAggAndEvaluator extends UDAFEvaluator {
-    var bdd: BDD = BDD.True
+class BDDAggAndBuffer extends AbstractAggregationBuffer {
+  var result: BDD = _
+}
 
-    override def init() = {
-      this.bdd = BDD.True
+class HiveBDDAggAndUDAFEvaluator extends GenericUDAFEvaluator {
+  private var bddOI: BinaryObjectInspector = _
+  private var interOI: BinaryObjectInspector = _
+
+  override def init(
+      mode: Mode,
+      parameters: Array[ObjectInspector]
+  ): ObjectInspector = {
+    super.init(mode, parameters)
+
+    if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
+      if (parameters.length != 1) {
+        throw new UDFArgumentException(
+          "bdd_agg_and requires 1 arguments (binary)"
+        )
+      }
+
+      parameters(0) match {
+        case oi: BinaryObjectInspector => bddOI = oi
+        case _ =>
+          throw new UDFArgumentException("Argument 1 (bdd) must be binary")
+      }
+    } else {
+      parameters(0) match {
+        case oi: BinaryObjectInspector => interOI = oi
+        case _ =>
+          throw new UDFArgumentException("Intermediate result must be binary")
+      }
     }
 
-    def iterate(bytes: BytesWritable) = {
-      this.bdd = this.bdd & (new BDD(bytes.getBytes()))
-      true
+    return PrimitiveObjectInspectorFactory.writableBinaryObjectInspector
+  }
+
+  override def getNewAggregationBuffer(): AggregationBuffer = {
+    val res = new BDDAggAndBuffer()
+    reset(res)
+    res
+  }
+
+  override def reset(agg: AggregationBuffer): Unit = {
+    agg.asInstanceOf[BDDAggAndBuffer].result = BDD.True
+  }
+
+  override def iterate(
+      agg: AggregationBuffer,
+      parameters: Array[Object]
+  ): Unit = {
+    if (parameters == null || parameters.length != 1 || parameters(0) == null)
+      return
+
+    val buffer = agg.asInstanceOf[BDDAggAndBuffer]
+    val bddVal = bddOI.getPrimitiveWritableObject(parameters(0))
+
+    val inputBdd = new BDD(bddVal.getBytes())
+    buffer.result = buffer.result & inputBdd
+  }
+
+  override def merge(agg: AggregationBuffer, partial: Object): Unit = {
+    if (partial == null) return
+
+    val buffer = agg.asInstanceOf[BDDAggAndBuffer]
+    val bddVal = interOI.getPrimitiveWritableObject(partial);
+
+    val rightBdd = new BDD(bddVal.getBytes())
+
+    buffer.result = buffer.result & rightBdd;
+  }
+
+  override def terminatePartial(agg: AggregationBuffer): AnyRef = {
+    val buffer = agg.asInstanceOf[BDDAggAndBuffer]
+
+    new BytesWritable(buffer.result.buffer);
+  }
+
+  override def terminate(agg: AggregationBuffer): AnyRef = {
+    val buffer = agg.asInstanceOf[BDDAggAndBuffer]
+    if (buffer.result == null) {
+      return null
     }
 
-    def terminatePartial() = terminate()
-
-    def merge(bytes: BytesWritable) = {
-      this.bdd = this.bdd & (new BDD(bytes.getBytes()))
-      true
-    }
-
-    def terminate() = new BytesWritable(this.bdd.buffer)
+    new BytesWritable(buffer.result.buffer);
   }
 }
 
-//@Description(
-//  name = "bdd_agg_and",
-//  value = "_FUNC_(x) - Returns the and of a set of BDDs"
-//)
-//class HiveBDDAggAndUDAF extends AbstractGenericUDAFResolver {
-//  override def getEvaluator(x: GenericUDAFParameterInfo) = {
-//    new HiveBDDAggAndUDAF.HiveBDDAggAndEvaluator()
-//  }
-//}
-//object HiveBDDAggAndUDAF {
-//  class HiveBDDAggAndEvaluator extends GenericUDAFEvaluator {
-//    class BDDBuffer(var bdd: BytesWritable) extends AbstractAggregationBuffer {}
-//
-//    override def getNewAggregationBuffer(): BDDBuffer = new BDDBuffer(
-//      new BytesWritable(BDD("0").buffer)
-//    )
-//
-//    override def reset(buffer: AggregationBuffer) = {
-//      val bddBuffer = buffer.asInstanceOf[BDDBuffer]
-//      bddBuffer.bdd = new BytesWritable(BDD("0").buffer)
-//    }
-//
-//    override def iterate(
-//        buffer: AggregationBuffer,
-//        parameters: Array[Object]
-//    ) = {
-//      assert(parameters.length == 1)
-//      val bddBuffer = buffer.asInstanceOf[BDDBuffer]
-//
-//      val bdd = new BDD(bddBuffer.bdd.getBytes())
-//      val bytes = PrimitiveObjectInspectorUtils
-//        .getBinary(
-//          parameters(0),
-//          PrimitiveObjectInspectorFactory.writableBinaryObjectInspector
-//        )
-//        .getBytes()
-//      bddBuffer.bdd = new BytesWritable((bdd & (new BDD(bytes))).buffer)
-//    }
-//
-//    override def terminatePartial(buffer: AggregationBuffer) = terminate(buffer)
-//
-//    override def merge(buffer: AggregationBuffer, partial: Object) = {
-//      val bddBuffer = buffer.asInstanceOf[BDDBuffer]
-//      val bytes = partial.asInstanceOf[BytesWritable]
-//      val bdd = new BDD(bddBuffer.bdd.getBytes())
-//      bddBuffer.bdd = new BytesWritable(
-//        (bdd & (new BDD(bytes.getBytes()))).buffer
-//      )
-//    }
-//
-//    override def terminate(buffer: AggregationBuffer) = {
-//      val bddBuffer = buffer.asInstanceOf[BDDBuffer]
-//      bddBuffer.bdd
-//    }
-//  }
-//}
+class HiveBDDAggAndUDAF extends AbstractGenericUDAFResolver {
+  @throws[HiveException]
+  override def getEvaluator(
+      parameters: Array[TypeInfo]
+  ): GenericUDAFEvaluator = {
+    if (parameters.length != 1) {
+      throw new UDFArgumentException("bdd_agg_and requires 1 argument")
+    }
+
+    new HiveBDDAggAndUDAFEvaluator()
+  }
+
+  @throws[HiveException]
+  override def getEvaluator(
+      info: GenericUDAFParameterInfo
+  ): GenericUDAFEvaluator = {
+    val parameters: Array[ObjectInspector] = info.getParameterObjectInspectors()
+    if (parameters.length != 1) {
+      throw new UDFArgumentException(
+        "bdd_agg_and requires 1 argument (from GenericUDAFParameterInfo)"
+      )
+    }
+
+    new HiveBDDAggAndUDAFEvaluator()
+  }
+}

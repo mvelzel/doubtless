@@ -50,8 +50,8 @@ int cmpRva(rva*, rva*);
  * be USHRT_MAX-1
  */
 
-typedef short      nodei;
-#define NODEI_MAX  SHRT_MAX
+typedef int32_t    nodei;
+#define NODEI_MAX  INT32_MAX
 #define NODEI_NONE -1
 
 typedef struct rva_node {
