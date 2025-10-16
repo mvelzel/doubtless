@@ -9,3 +9,4 @@
     {% do run_query(sql) %}
 
 {%- endmacro -%}
+

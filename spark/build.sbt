@@ -7,6 +7,11 @@ coverageEnabled := true
 
 fork := true
 
+artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
+  //artifact.name + "-" + module.revision + "-linux" +  "." + artifact.extension
+  artifact.name + "-" + module.revision + "." + artifact.extension
+}
+
 lazy val PerfTest = config("perf") extend (Test)
 
 lazy val root = (project in file("."))
