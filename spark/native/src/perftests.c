@@ -178,50 +178,81 @@ static void print_info(char* info) {
     printf("[info] \033[0;32m%s\033[0m\n", info);
 }
 
-static void big_bdd() {
+static char all_vars_table[52] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
+static char lower_vars_table[26] = {'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'};
+static char upper_vars_table[26] = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
+
+static void generate_big_bdd() {
     char* _errmsg = NULL;
     char* op = "&";
 
-    int repeat = 41663;
+    int desired_size = 1000000;
+    int repeat_size = 10000;
 
-    bdd* res = NULL;
-    for (int r = 0; r < repeat; r++) {
-        char expr[100];
-        sprintf(expr, "x=%d", r);
-        char* expr_ptr = expr;
-        bdd* new_bdd;
-        if (!(new_bdd = create_bdd(BDD_DEFAULT, expr_ptr, &_errmsg, 0))) {
-            printf("create_bdd: error: %s ",(_errmsg ? _errmsg : "NULL"));
-        }
-
-        if (res == NULL) {
-            res = new_bdd;
-        } else {
-            bdd* new_res;
-
-            if (!(new_res = bdd_operator(*op, BY_APPLY, res, new_bdd, &_errmsg))) {
-                printf("bdd_operator: error: %s ",(_errmsg ? _errmsg : "NULL"));
+    bdd* final_res = NULL;
+    int i = 0;
+    while (final_res == NULL || final_res->bytesize < desired_size) {
+        bdd* res = NULL;
+        while (res == NULL || res->bytesize < repeat_size) {
+            char expr[MAX_RVA_NAME + 2];
+            sprintf(expr, "%c%d=1", upper_vars_table[i % 26], (i / 26) + 1);
+            //sprintf(expr, "x123456789=%d", i);
+            //sprintf(expr, "a%d=1", i);
+            char* expr_ptr = expr;
+            bdd* new_bdd;
+            if (!(new_bdd = create_bdd(BDD_DEFAULT, expr_ptr, &_errmsg, 0))) {
+                printf("create_bdd: error: %s ",(_errmsg ? _errmsg : "NULL"));
             }
 
-            printf("Inter size: %d, repeat: %d\n", new_res->bytesize, r);
+            if (res == NULL) {
+                res = new_bdd;
+            } else {
+                bdd* new_res;
 
-            V_rva_node_free(&new_bdd->tree);
-            free(new_bdd);
-            new_bdd = NULL;
+                if (!(new_res = bdd_operator(*op, BY_APPLY, res, new_bdd, &_errmsg))) {
+                    printf("bdd_operator: error: %s ",(_errmsg ? _errmsg : "NULL"));
+                }
+
+                printf("Inter size: %d, name: %s\n", new_res->bytesize, expr);
+
+                V_rva_node_free(&new_bdd->tree);
+                free(new_bdd);
+                new_bdd = NULL;
+
+                V_rva_node_free(&res->tree);
+                free(res);
+                res = new_res;
+            }
+
+            if (_errmsg != NULL) {
+                printf("%s", _errmsg);
+            }
+
+            i++;
+        }
+
+        if (final_res == NULL) {
+            final_res = res;
+        } else {
+            bdd* new_final_res;
+            if (!(new_final_res = bdd_operator(*op, BY_APPLY, final_res, res, &_errmsg))) {
+                printf("bdd_operator: error: %s ",(_errmsg ? _errmsg : "NULL"));
+            }
+            V_rva_node_free(&final_res->tree);
+            free(final_res);
+            final_res = new_final_res;
+
+            printf("Combined size: %d\n", final_res->bytesize);
 
             V_rva_node_free(&res->tree);
             free(res);
-            res = new_res;
-        }
-
-        if (_errmsg != NULL) {
-            printf("%s", _errmsg);
+            res = NULL;
         }
     }
 
-    printf("Total size: %d\n", res->bytesize);
+    printf("Total size: %d\n", final_res->bytesize);
 
-    char* encoded_data = base64_encode((unsigned char*) res, res->bytesize);
+    char* encoded_data = base64_encode((unsigned char*) final_res, final_res->bytesize);
 
     FILE *fptr;
     fptr = fopen("1mb_bdd.txt", "w+");
@@ -232,13 +263,13 @@ static void big_bdd() {
     free(encoded_data);
     encoded_data = NULL;
 
-    V_rva_node_free(&res->tree);
-    free(res);
-    res = NULL;
+    V_rva_node_free(&final_res->tree);
+    free(final_res);
+    final_res = NULL;
 }
 
 int main() {
-    big_bdd();
+    generate_big_bdd();
     //print_info("A BDD");
     //test_instantiate();
     //print_info("- should be able to quickly be instantiated");

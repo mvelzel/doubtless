@@ -16,6 +16,8 @@ experiment_dataset as (
     from gb_dataset as gb
     left join sized_bdds as sized
     on sized.size = 1000
+    and sized.is_alt = true
+    where gb.row_num <= 100
 
 )
 
