@@ -1,6 +1,14 @@
 with gb_dataset as (
 
-    select * from {{ ref('stg_dummy__gigabyte_dataset') }}
+    select
+        row_num,
+        {% for i in range(1, 21) %}
+        column_{{ i }}
+        {% if not loop.last %}
+        ,
+        {% endif %}
+        {% endfor %}
+    from {{ ref('stg_dummy__gigabyte_dataset') }}
 
 ),
 

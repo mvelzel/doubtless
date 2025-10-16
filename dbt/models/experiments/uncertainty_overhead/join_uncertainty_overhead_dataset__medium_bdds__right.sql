@@ -23,8 +23,8 @@ experiment_dataset as (
     select gb.*, sized.bdd
     from gb_dataset as gb
     left join sized_bdds as sized
-    on sized.size = 1000
-    and sized.is_alt = false
+    on sized.size = 100000
+    and sized.is_alt = true
     where gb.row_num <= 100
 
 )
