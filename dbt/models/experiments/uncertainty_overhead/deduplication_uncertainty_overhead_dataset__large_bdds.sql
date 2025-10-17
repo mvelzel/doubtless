@@ -16,7 +16,13 @@ base_dataset as (
     from gb_dataset as gb
     left join sized_bdds as sized
     on sized.size = 1000000
-    and sized.is_alt = false
+    and (
+        sized.is_alt = false
+        and gb.row_num % 2 = 0)
+    ) or (
+        sized.is_alt = true
+        and gb.row_num % 2 = 1
+    )
     where gb.row_num <= 100
 
 ),

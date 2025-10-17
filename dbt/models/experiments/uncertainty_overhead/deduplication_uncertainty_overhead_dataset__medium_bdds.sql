@@ -15,7 +15,7 @@ base_dataset as (
     select gb.*, sized.bdd
     from gb_dataset as gb
     left join sized_bdds as sized
-    on sized.size = 1000
+    on sized.size = 100000
     and (
         sized.is_alt = false
         and gb.row_num % 2 = 0)

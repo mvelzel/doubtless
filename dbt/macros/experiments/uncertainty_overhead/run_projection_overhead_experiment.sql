@@ -1,6 +1,7 @@
 {%- macro run_projection_overhead_experiment(experiment_name) -%}
 
-    {% set sql %}
+    {%- call statement('experiment', fetch_result=False) -%}
+
     select
         row_num,
         {% if experiment_name == 'large_strings' %}
@@ -15,8 +16,7 @@
         {% endif %}
         {% endfor %}
     from experiments.projection_selection_uncertainty_overhead_dataset__{{ experiment_name }}
-    {% endset %}
 
-    {% do run_query(sql) %}
+    {%- endcall -%}
 
 {%- endmacro -%}

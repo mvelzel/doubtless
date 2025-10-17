@@ -16,7 +16,7 @@ filled_rows as (
 
     select
         gen.row_num,
-        {% for column_number in range(1, 100) -%}
+        {% for column_number in range(1, 101) -%}
         kb.string as column_{{ column_number }}
         {%- if not loop.last %}
         ,

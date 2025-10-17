@@ -1,6 +1,6 @@
 {%- macro run_cross_join_overhead_experiment(experiment_name) -%}
 
-    {%- call statement('experiment_result', fetch_result=False) -%}
+    {%- call statement('experiment', fetch_result=False) -%}
 
     select
         {% if experiment_name != 'control' and experiment_name != 'large_strings' and experiment_name != 'medium_strings' %}
