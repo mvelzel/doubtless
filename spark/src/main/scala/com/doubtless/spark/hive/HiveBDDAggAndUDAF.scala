@@ -36,7 +36,7 @@ class HiveBDDAggAndUDAFEvaluator extends GenericUDAFEvaluator {
     if (mode == Mode.PARTIAL1 || mode == Mode.COMPLETE) {
       if (parameters.length != 1) {
         throw new UDFArgumentException(
-          "bdd_agg_and requires 1 arguments (binary)"
+          "agg_and requires 1 arguments (binary)"
         )
       }
 
@@ -113,7 +113,7 @@ class HiveBDDAggAndUDAF extends AbstractGenericUDAFResolver {
       parameters: Array[TypeInfo]
   ): GenericUDAFEvaluator = {
     if (parameters.length != 1) {
-      throw new UDFArgumentException("bdd_agg_and requires 1 argument")
+      throw new UDFArgumentException("agg_and requires 1 argument")
     }
 
     new HiveBDDAggAndUDAFEvaluator()
@@ -126,7 +126,7 @@ class HiveBDDAggAndUDAF extends AbstractGenericUDAFResolver {
     val parameters: Array[ObjectInspector] = info.getParameterObjectInspectors()
     if (parameters.length != 1) {
       throw new UDFArgumentException(
-        "bdd_agg_and requires 1 argument (from GenericUDAFParameterInfo)"
+        "agg_and requires 1 argument (from GenericUDAFParameterInfo)"
       )
     }
 

@@ -15,7 +15,11 @@ base_dataset as (
 experiment_dataset as (
 
     select base.*
-    from explode(sequence(1, 100)), base_dataset as base
+    {% if target.name == 'spark' or target.name == 'databricks' -%}
+    from explode(sequence(1, 100))
+    {% else -%}
+    from generate_series(1, 100) as col
+    {% endif -%}, base_dataset as base
 
 )
 

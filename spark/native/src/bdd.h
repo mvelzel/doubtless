@@ -42,12 +42,6 @@ int cmpRva(rva*, rva*);
  * Decision Diagrams" by HR Andersen.
  *
  * https://www.cmi.ac.in/~madhavan/courses/verification-2011/andersen-bdd.pdf
- *
- * The current implementation defines a node index type 'nodei' as a regular
- * short with the NODEI_NONE = -1. This can be made larger by making it
- * unsigned but BDD's of more than 32767 are too large to handle anyway I
- * think. And in this case NODEI_NONE would be USHRT_MAX and NODEI_MAX would
- * be USHRT_MAX-1
  */
 
 typedef int32_t    nodei;

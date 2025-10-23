@@ -15,7 +15,7 @@
         ,
         {% endif %}
         {% endfor %}
-    from experiments.projection_selection_uncertainty_overhead_dataset__{{ experiment_name }}
+    from experiments.selection_uncertainty_overhead_dataset__{{ experiment_name }}
 
     {%- endcall -%}
 

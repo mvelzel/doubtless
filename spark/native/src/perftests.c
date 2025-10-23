@@ -186,11 +186,12 @@ static void generate_big_bdd() {
     char* _errmsg = NULL;
     char* op = "&";
 
-    int desired_size = 1000000;
-    int repeat_size = 10000;
+    int desired_size = 1000;
+    int repeat_size = 1;
 
     bdd* final_res = NULL;
     int i = 0;
+    char* final_expr = NULL;
     while (final_res == NULL || final_res->bytesize < desired_size) {
         bdd* res = NULL;
         while (res == NULL || res->bytesize < repeat_size) {
@@ -199,6 +200,7 @@ static void generate_big_bdd() {
             //sprintf(expr, "x123456789=%d", i);
             //sprintf(expr, "a%d=1", i);
             char* expr_ptr = expr;
+            final_expr = expr_ptr;
             bdd* new_bdd;
             if (!(new_bdd = create_bdd(BDD_DEFAULT, expr_ptr, &_errmsg, 0))) {
                 printf("create_bdd: error: %s ",(_errmsg ? _errmsg : "NULL"));
@@ -251,6 +253,8 @@ static void generate_big_bdd() {
     }
 
     printf("Total size: %d\n", final_res->bytesize);
+    printf("Total nodes: %d\n", BDD_TREESIZE(final_res));
+    printf("Final expression: %s\n", final_expr);
 
     char* encoded_data = base64_encode((unsigned char*) final_res, final_res->bytesize);
 

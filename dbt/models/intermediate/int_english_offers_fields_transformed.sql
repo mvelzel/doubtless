@@ -1,3 +1,7 @@
+{{
+    config(materialized='table')
+}}
+
 with english_offers_unnested as (
 
     select * from {{ ref('int_english_offers_unnested') }}
@@ -9,7 +13,7 @@ offers_transformed as (
     select
         url,
         node_id,
-        cast(cluster_id as int),
+        cast(cluster_id as int) as cluster_id,
         {{ remove_surrounding_brackets('identifier_gtin8') }} as identifier_gtin8,
         {{ remove_surrounding_brackets('identifier_gtin12') }} as identifier_gtin12,
         {{ remove_surrounding_brackets('identifier_gtin13') }} as identifier_gtin13,
@@ -28,6 +32,15 @@ offers_transformed as (
         {{ remove_surrounding_brackets('property_price_currency') }} as property_price_currency,
         {{ remove_surrounding_brackets('property_title') }} as property_title
     from english_offers_unnested
+
+),
+
+with_cluster_sizes as (
+
+    select
+        *,
+        count(*) over (partition by cluster_id) as cluster_size
+    from offers_transformed
 
 )
 

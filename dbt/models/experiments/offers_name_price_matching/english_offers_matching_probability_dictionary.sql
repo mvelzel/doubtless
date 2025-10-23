@@ -8,8 +8,6 @@ with offers_with_sentences as (
         price_matching_variable_name,
         price_matching_variable_alternative
     from {{ ref('int_english_offers_matching_sentence_enriched') }}
-    -- If cluster_id is larger than 157201 then the dict index will exceed a hard limit of USHRT_MAX=65535
-    -- where cluster_id <= 157201
 
 ),
 

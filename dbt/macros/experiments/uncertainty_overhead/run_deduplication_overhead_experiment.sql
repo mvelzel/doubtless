@@ -5,7 +5,7 @@
     select
         row_num,
         {% if experiment_name != 'control' and experiment_name != 'large_strings' and experiment_name != 'medium_strings' %}
-        bdd_agg_or(bdd) as bdd,
+        agg_or(bdd) as bdd,
         {% elif experiment_name == 'large_strings' or experiment_name == 'medium_strings' %}
         string,
         {% endif %}

@@ -43,7 +43,7 @@ offer_names_and_prices as (
         case
             when name.name_matching_sentence is null then price.price_matching_sentence
             when price.price_matching_sentence is null then name.name_matching_sentence
-            else {{ bdd_and('name.name_matching_sentence', 'price.price_matching_sentence') }}
+            else _and(name.name_matching_sentence, price.price_matching_sentence)
         end as sentence
     from offer_names as name
     full join offer_prices as price
@@ -52,6 +52,15 @@ offer_names_and_prices as (
     where name.row_number = 1
     and price.row_number = 1
 
+),
+
+with_cluster_sizes as (
+
+    select
+        *,
+        count(*) over (partition by cluster_id) as cluster_size
+    from offer_names_and_prices
+
 )
 
-select * from offer_names_and_prices
+select * from with_cluster_sizes

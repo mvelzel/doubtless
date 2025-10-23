@@ -21,7 +21,7 @@
 {% macro create_bdd_and_udf() %}
     
     {% if target.name == 'spark' or target.name == 'databricks' %}
-        create or replace function bdd_and as 'com.doubtless.spark.hive.HiveBDDAnd';
+        create or replace function _and as 'com.doubtless.spark.hive.HiveBDDAnd';
     {% else %}
         select 1;
     {% endif %}
@@ -31,7 +31,7 @@
 {% macro create_bdd_or_udf() %}
     
     {% if target.name == 'spark' or target.name == 'databricks' %}
-        create or replace function bdd_or as 'com.doubtless.spark.hive.HiveBDDOr';
+        create or replace function _or as 'com.doubtless.spark.hive.HiveBDDOr';
     {% else %}
         select 1;
     {% endif %}
@@ -41,7 +41,7 @@
 {% macro create_bdd_not_udf() %}
     
     {% if target.name == 'spark' or target.name == 'databricks' %}
-        create or replace function bdd_not as 'com.doubtless.spark.hive.HiveBDDNot';
+        create or replace function _not as 'com.doubtless.spark.hive.HiveBDDNot';
     {% else %}
         select 1;
     {% endif %}
@@ -51,7 +51,7 @@
 {% macro create_bdd_equiv_udf() %}
     
     {% if target.name == 'spark' or target.name == 'databricks' %}
-        create or replace function bdd_equiv as 'com.doubtless.spark.hive.HiveBDDEquiv';
+        create or replace function bdd_fast_equiv as 'com.doubtless.spark.hive.HiveBDDEquiv';
     {% else %}
         select 1;
     {% endif %}
@@ -79,7 +79,7 @@
         begin
             select (this & that) into res;
 
-            if bdd_equiv(res, bdd('0')) then
+            if bdd_fast_equiv(res, bdd('0')) then
                 return bdd('0');
             else
                 return res;

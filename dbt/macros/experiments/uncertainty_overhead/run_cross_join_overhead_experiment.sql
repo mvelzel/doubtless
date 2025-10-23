@@ -4,7 +4,7 @@
 
     select
         {% if experiment_name != 'control' and experiment_name != 'large_strings' and experiment_name != 'medium_strings' %}
-        bdd_and(l.bdd, r.bdd) as bdd,
+        _and(l.bdd, r.bdd) as bdd,
         {% endif %}
         *
     from experiments.join_uncertainty_overhead_dataset__{{ experiment_name }}__left as l

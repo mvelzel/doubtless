@@ -8,7 +8,11 @@ generated_rows as (
 
     select
         col as row_num
+    {% if target.name == 'spark' or target.name == 'databricks' -%}
     from explode(sequence(1, 10000))
+    {% else -%}
+    from generate_series(1, 10000) as col
+    {% endif -%}
 
 ),
 

@@ -16,13 +16,7 @@ base_dataset as (
     from gb_dataset as gb
     left join sized_bdds as sized
     on sized.size = 1000
-    and (
-        sized.is_alt = false
-        and gb.row_num % 2 = 0)
-    ) or (
-        sized.is_alt = true
-        and gb.row_num % 2 = 1
-    )
+    and sized.is_alt = (gb.row_num % 2 = 1)
     where gb.row_num <= 100
 
 ),
@@ -30,7 +24,11 @@ base_dataset as (
 experiment_dataset as (
 
     select base.*
-    from explode(sequence(1, 100)), base_dataset as base
+    {% if target.name == 'spark' or target.name == 'databricks' -%}
+    from explode(sequence(1, 100))
+    {% else -%}
+    from generate_series(1, 100) as col
+    {% endif -%}, base_dataset as base
 
 )
 

@@ -20,12 +20,12 @@ base64_decoded as (
         unbase64(base64) as bdd
     from sized_base64
     {% else -%}
-    -- TODO Implement this for Postgres?
     select
-        100 as size,
-        100 as actual_size,
-        false as is_alt,
-        bdd('x=1') as bdd
+        size,
+        length(decode(base64, 'base64')) as actual_size,
+        is_alt as is_alt,
+        decode(base64, 'base64')::bdd as bdd
+    from sized_base64
     {% endif -%}
 
 )

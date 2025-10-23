@@ -1,9 +1,10 @@
 {%- macro run_prob_count_experiment(experiment_name) -%}
 
-    {% set sql %}
+    {%- call statement('experiment', fetch_result=False) -%}
+
     with grouped as (
         select prob_count(sentence, '{{ var("prune_method") }}') as map
-        from experiments.probabilistic_count_dataset
+        from {{ ref('probabilistic_count_dataset') }}
         where experiment_name = '{{ experiment_name }}'
         group by group_index
     )
@@ -18,8 +19,7 @@
             select * from consume_prob_agg_results(grouped.map) as res(count integer,sentence bdd)
         ) res on true;
     {% endif %}
-    {% endset %}
 
-    {% do run_query(sql) %}
+    {%- endcall -%}
 
 {%- endmacro -%}
