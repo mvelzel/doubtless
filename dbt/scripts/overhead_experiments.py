@@ -49,8 +49,10 @@ experiments = {
                 "large_strings"
             ],
             "postgres": [
+                "control",
                 "small_bdds",
                 "large_bdds",
+                "large_strings"
             ],
         },
         "datasets": {
@@ -76,8 +78,10 @@ experiments = {
                 "large_strings"
             ],
             "postgres": [
+                "control",
                 "small_bdds",
                 "large_bdds",
+                "large_strings"
             ],
         },
         "datasets": {
@@ -103,8 +107,10 @@ experiments = {
                 "medium_strings"
             ],
             "postgres": [
+                "control",
                 "small_bdds",
                 "medium_bdds",
+                "medium_strings"
             ],
         },
         "datasets": {
@@ -142,8 +148,10 @@ experiments = {
                 "medium_strings"
             ],
             "postgres": [
+                "control",
                 "small_bdds",
                 "medium_bdds",
+                "medium_strings"
             ],
         },
         "datasets": {
@@ -181,8 +189,10 @@ experiments = {
                 "medium_strings"
             ],
             "postgres": [
+                "control",
                 "small_bdds",
                 "medium_bdds",
+                "medium_strings"
             ],
         },
         "datasets": {
