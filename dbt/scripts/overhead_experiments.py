@@ -492,8 +492,10 @@ if __name__ == "__main__":
     dbt = dbtRunner()
 
     if args.build_dataset:
+        print("Building core datasets...")
+        logger.info("Building core datasets...")
         build_dataset(dbt, args.target,
-                      "+stg_dummy__sized_bdds +stg_dummy__gigabyte_dataset")
+                      "+int_sized_bdds_decoded +stg_dummy__gigabyte_dataset")
 
     for experiment in args.experiments:
         run_overhead_experiments(args, dbt, experiment, all_experiments)
