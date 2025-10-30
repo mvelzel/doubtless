@@ -2,8 +2,8 @@ with dummy_data as (
 
     select * from (
         values
-        {%- for variable_count in range(1, 20) -%}
-        {%- for alternative_count in range(1, 20) -%}
+        {%- for variable_count in range(1, 31) -%}
+        {%- for alternative_count in range(1, 31) -%}
         {{ generate_bdd_dummy_data(
             groups=1,
             group_variables=variable_count,
@@ -23,4 +23,11 @@ with dummy_data as (
 
 )
 
-select * from dummy_data
+select
+    experiment_name,
+    group_index,
+    number,
+    sentence,
+    variable,
+    alternative
+from dummy_data

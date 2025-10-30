@@ -44,7 +44,7 @@
                             'then prune_and(sentence, ! $2) '
                             'else sentence & (! $2) '
                         'end as sentence from %1$I '
-                ') '
+                ') as subq '
                 'group by count, sum) '
                 'on conflict (count, sum) do update set sentence = excluded.sentence',
                 inter.results_table

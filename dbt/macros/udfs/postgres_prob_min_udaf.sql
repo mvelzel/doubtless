@@ -57,7 +57,7 @@
                             'else record.sentence '
                         'end as bdd '
                     'from %1$I as record '
-                ') '
+                ') as subq '
                 'group by min) '
                 'on conflict (min) do update set sentence = excluded.sentence',
                 inter.results_table

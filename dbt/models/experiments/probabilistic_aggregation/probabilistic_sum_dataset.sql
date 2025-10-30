@@ -23,4 +23,11 @@ with dummy_data as (
 
 )
 
-select * from dummy_data
+select
+    experiment_name,
+    group_index,
+    number,
+    sentence,
+    variable,
+    alternative
+from dummy_data
