@@ -1,6 +1,6 @@
 with source as (
 
-    {% if target.name == 'spark' -%}
+    {% if target.name == 'spark' or target.name == 'databricks' -%}
 
     select * from {{ source('raw', 'raw_wdc') }}
 

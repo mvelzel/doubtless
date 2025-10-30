@@ -9,13 +9,13 @@ offers_exploded_properties as (
     select
         offer.url,
         offer.nodeID,
-        {% if target.name == 'spark' -%}
+        {% if target.name == 'spark' or target.name == 'databricks' -%}
         property
         {% elif target.name == 'postgres' -%}
         json.value as property
         {% endif -%}
     from wdc_english_offers as offer
-    {% if target.name == 'spark' -%}
+    {% if target.name == 'spark' or target.name == 'databricks' -%}
     lateral view explode(offer.`schema.org_properties`) as property
     {% elif target.name == 'postgres' -%}
     cross join jsonb_array_elements(offer."schema.org_properties") as json
@@ -47,13 +47,13 @@ offers_exploded_identifiers as (
     select
         offer.url,
         offer.nodeID,
-        {% if target.name == 'spark' -%}
+        {% if target.name == 'spark' or target.name == 'databricks' -%}
         identifier
         {% elif target.name == 'postgres' -%}
         json.value as identifier
         {% endif -%}
     from wdc_english_offers as offer
-    {% if target.name == 'spark' -%}
+    {% if target.name == 'spark' or target.name == 'databricks' -%}
     lateral view explode(offer.`identifiers`) as identifier
     {% elif target.name == 'postgres' -%}
     cross join jsonb_array_elements(offer."identifiers") as json

@@ -2,6 +2,8 @@
 
     {% if target.name == 'spark' %}
         create table if not exists raw.raw_wdc using json location "~/offers_english.json";
+    {% elif target.name == 'databricks' %}
+        create table if not exists raw.raw_wdc using json location "/offers_english.json";
     {% elif target.name == 'postgres' and execute %}
         {% set data_exists_statement %}
             select exists (
