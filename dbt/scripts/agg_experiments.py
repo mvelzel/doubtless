@@ -61,11 +61,11 @@ experiments = {
                 f"prob_min_{variables}_{alternatives}"
                 # for alternatives in range(1, 26)
                 # for alternatives in range(1, 3)
-                for alternatives in range(1, 30)
+                for alternatives in range(1, 25)
             ]
             # for variables in range(1, 26)
             # for variables in range(1, 3)
-            for variables in range(1, 30)
+            for variables in range(1, 25)
         ],
         "operation": "run_prob_min_experiment"
     },
@@ -76,11 +76,11 @@ experiments = {
                 f"prob_max_{variables}_{alternatives}"
                 # for alternatives in range(1, 26)
                 # for alternatives in range(1, 3)
-                for alternatives in range(1, 30)
+                for alternatives in range(1, 25)
             ]
             # for variables in range(1, 26)
             # for variables in range(1, 3)
-            for variables in range(1, 30)
+            for variables in range(1, 25)
         ],
         "operation": "run_prob_max_experiment"
     },
