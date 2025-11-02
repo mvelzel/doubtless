@@ -113,3 +113,4 @@ offers_unnested_combined as (
 )
 
 select * from offers_unnested_combined
+order by cluster_id

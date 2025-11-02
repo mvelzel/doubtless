@@ -13,14 +13,6 @@ logging.getLogger("thrift.transport").setLevel(logging.ERROR)
 
 experiment_timeout = 15 * 60  # 15 minutes
 
-operations = [
-    "run_cross_join_overhead_experiment",
-    "run_deduplication_overhead_experiment",
-    "run_inner_join_overhead_experiment",
-    "run_projection_overhead_experiment",
-    "run_selection_overhead_experiment",
-]
-
 all_experiment_names = [
     "control",
     "small_bdds",

@@ -104,3 +104,4 @@ with_cluster_sizes as (
 )
 
 select * from with_cluster_sizes
+order by cluster_id
