@@ -92,16 +92,7 @@ offers_with_bdds as (
     on offer.cluster_id = price_counts.cluster_id
     and offer.property_price = price_counts.property_price
 
-),
-
-with_cluster_sizes as (
-
-    select
-        *,
-        count(*) over (partition by cluster_id) as cluster_size
-    from offers_with_bdds
-
 )
 
-select * from with_cluster_sizes
+select * from offers_with_bdds
 order by cluster_id

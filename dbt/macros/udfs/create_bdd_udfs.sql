@@ -61,7 +61,7 @@
 {% macro create_bdd_prob_udf() %}
     
     {% if target.name == 'spark' or target.name == 'databricks' %}
-        create or replace function prob as 'com.doubtless.spark.hive.HiveBDDNot';
+        create or replace function prob as 'com.doubtless.spark.hive.HiveBDDProb';
     {% else %}
         select 1;
     {% endif %}
