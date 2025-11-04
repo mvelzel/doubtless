@@ -44,7 +44,9 @@ class ProbDict private (
     private val varKeys: Set[RandVar]
 ) extends Map[RandVar, Double] {
   def this(buffer: Array[Byte]) =
-    this(buffer, Native.getKeys(buffer).map(RandVar(_)).toSet)
+    // Disable this for experiment efficientcy
+    // this(buffer, Native.getKeys(buffer).map(RandVar(_)).toSet)
+    this(buffer, Set())
 
   override def keys: Iterable[RandVar] = varKeys
 

@@ -24,6 +24,8 @@ class BDD(val buffer: Array[Byte]) extends Serializable {
 
   def probability(dict: ProbDict) = Native.bddProb(dict.buffer, buffer)
 
+  def probabilityFromBuffer(dict: Array[Byte]) = Native.bddProb(dict, buffer)
+
   def toExpr(): String = Native.bdd2string(buffer)
 
   def toDot(): String = Native.bddGenerateDot(buffer)
