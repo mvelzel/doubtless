@@ -14,4 +14,6 @@ dependencies = [
     "pyyaml>=6.0.2",
     "scikit-learn>=1.7.0",
     "tqdm>=4.67.1",
+    "tikzplotlib>=0.10.1",
+    "scienceplots>=2.1.1",
 ]

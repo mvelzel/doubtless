@@ -9,3 +9,12 @@ spark/project/native/metastore_db/
 spark/native/src/linux-build/
 .DS_store
 dbt/derby.log
+dbt/experiment_results/**/*.png
+dbt/experiment_results/*.png
+**/*.log
+*.log
+dbt/figures/
+dbt/profiles.yml
+profiles.yml
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
